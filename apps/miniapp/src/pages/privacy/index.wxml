@@ -1,0 +1,60 @@
+<view class="screen">
+  <view class="toolbar">
+    <text class="page-title">{{copy.heroEyebrow}}</text>
+    <button class="ghost-btn lang-btn" size="mini" bindtap="toggleLanguage">{{copy.languageButtonLabel}}</button>
+  </view>
+
+  <view class="hero-block">
+    <text class="hero-title">{{copy.heroTitle}}</text>
+    <text class="hero-subtitle">{{copy.heroSubtitle}}</text>
+  </view>
+
+  <text class="section-title">{{copy.settingsSectionTitle}}</text>
+  <view class="panel setting-list">
+    <view class="setting-item" wx:for="{{settingViews}}" wx:key="type">
+      <view class="setting-copy">
+        <text class="setting-title">{{item.title}}</text>
+        <text class="setting-subtitle">{{item.subtitle}}</text>
+      </view>
+      <switch
+        checked="{{item.enabled}}"
+        data-type="{{item.type}}"
+        bindchange="toggleSetting"
+        color="#FF5B8D"
+        disabled="{{isToggling || isDeleting}}"
+      />
+    </view>
+  </view>
+
+  <view class="panel shortcut-panel">
+    <view class="shortcut-copy">
+      <text class="setting-title">{{copy.reminderShortcutTitle}}</text>
+      <text class="setting-subtitle">{{copy.reminderShortcutSubtitle}}</text>
+    </view>
+    <button class="ghost-btn shortcut-btn" bindtap="openReminderSettings">{{copy.reminderShortcutButton}}</button>
+  </view>
+
+  <button class="primary-btn access-btn" bindtap="exportData">{{copy.accessLogLabel}}</button>
+
+  <view class="button-row compact-actions">
+    <button class="ghost-btn" bindtap="withdrawSensitiveConsent">{{copy.withdrawLabel}}</button>
+    <button class="danger-btn" loading="{{isDeleting}}" bindtap="deleteAccount">{{copy.deleteLabel}}</button>
+  </view>
+
+  <view class="panel export-panel" wx:if="{{exportBundle}}">
+    <text class="setting-title">{{copy.exportPreviewTitle}}</text>
+    <text class="setting-subtitle">{{copy.exportPreviewPrefix}} {{exportBundle.exportedAt}}</text>
+    <text class="setting-subtitle">{{exportBundle.cycles.length}} {{copy.exportPreviewUnit}}</text>
+  </view>
+
+  <text class="section-title">{{copy.actionSectionTitle}}</text>
+  <view class="panel action-panel" wx:if="{{actionViews.length}}">
+    <view class="action-item" wx:for="{{actionViews}}" wx:key="id">
+      <text class="action-title">{{item.typeLabel}}</text>
+      <text class="action-meta">{{item.metaLabel}}</text>
+    </view>
+  </view>
+  <view class="panel empty-state" wx:else>
+    {{copy.actionEmpty}}
+  </view>
+</view>

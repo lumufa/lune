@@ -1,0 +1,49 @@
+{
+  "name": "women-period-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build:shared && npm run build:prediction && npm run build:api && npm run build:miniapp && npm run build:mobile",
+    "build:shared": "npm --workspace packages/shared run build",
+    "build:prediction": "npm --workspace packages/prediction run build",
+    "build:api": "npm --workspace apps/api run build",
+    "build:miniapp": "npm --workspace apps/miniapp run build && npm --workspace apps/miniapp run lint",
+    "build:mobile": "npm --workspace apps/mobile run typecheck",
+    "lint": "npm run build:shared && npm run build:prediction && npm --workspace apps/api run lint && npm --workspace apps/miniapp run lint && npm run build:mobile",
+    "test": "npm run test:prediction",
+    "dev:api": "npm run build:shared && npm run build:prediction && npm --workspace apps/api run start:dev",
+    "start:mobile": "npm --workspace apps/mobile run start",
+    "start:mobile:dev": "powershell -ExecutionPolicy Bypass -File scripts\\start-mobile-dev.ps1",
+    "start:mobile:tunnel": "powershell -ExecutionPolicy Bypass -File scripts\\start-mobile-dev.ps1 -Mode tunnel",
+    "start:mobile:android": "npm --workspace apps/mobile run android",
+    "start:mobile:ios": "npm --workspace apps/mobile run ios",
+    "check:harmony-env": "powershell -ExecutionPolicy Bypass -File scripts\\check-harmony-env.ps1",
+    "build:harmony": "powershell -ExecutionPolicy Bypass -File scripts\\build-harmony.ps1",
+    "build:harmony:clean": "powershell -ExecutionPolicy Bypass -File scripts\\build-harmony.ps1 -Clean",
+    "build:mobile:android:preview": "powershell -ExecutionPolicy Bypass -File scripts\\mobile-build.ps1 -Platform android -Profile preview",
+    "build:mobile:android:prod": "powershell -ExecutionPolicy Bypass -File scripts\\mobile-build.ps1 -Platform android -Profile production",
+    "build:mobile:ios:preview": "powershell -ExecutionPolicy Bypass -File scripts\\mobile-build.ps1 -Platform ios -Profile preview",
+    "build:mobile:ios:prod": "powershell -ExecutionPolicy Bypass -File scripts\\mobile-build.ps1 -Platform ios -Profile production",
+    "submit:mobile:ios:prod": "powershell -ExecutionPolicy Bypass -File scripts\\mobile-build.ps1 -Platform ios -Profile production -AutoSubmit",
+    "start:api": "npm run build:shared && npm run build:prediction && npm run build:api && node apps/api/dist/main.js",
+    "seed:demo": "node scripts/seed-demo.cjs",
+    "open:miniapp": "cmd /c scripts\\open-miniapp.cmd",
+    "check:miniapp-copy": "node scripts/check-miniapp-copy.cjs",
+    "package:cloudrun-api": "powershell -ExecutionPolicy Bypass -File scripts\\package-cloudrun-api.ps1",
+    "test:prediction": "npm run build:shared && npm run build:prediction && npm --workspace packages/prediction run test"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.9"
+  }
+}

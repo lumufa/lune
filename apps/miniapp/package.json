@@ -1,0 +1,15 @@
+{
+  "name": "@women-period/miniapp",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "lint": "tsc --noEmit -p tsconfig.json",
+    "build": "node ../../scripts/build-miniapp.cjs"
+  },
+  "dependencies": {
+    "@women-period/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "miniprogram-api-typings": "^5.1.2"
+  }
+}

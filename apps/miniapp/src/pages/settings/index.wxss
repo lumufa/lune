@@ -1,0 +1,166 @@
+.settings-screen {
+  background: var(--flo-canvas);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.header-title {
+  color: var(--flo-ink);
+  font-size: 48rpx;
+  font-weight: 700;
+}
+
+.header-subtle {
+  color: var(--flo-muted);
+  font-size: 28rpx;
+  line-height: 40rpx;
+  font-weight: 500;
+}
+
+/* Stepper cards */
+.stepper-card {
+  border-radius: 40rpx;
+  background: #ffffff;
+  border: 2rpx solid #EFEFF3;
+  padding: 36rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 28rpx;
+}
+
+.stepper-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stepper-label {
+  color: var(--flo-ink);
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.stepper-value {
+  color: var(--flo-pink);
+  font-size: 36rpx;
+  font-weight: 700;
+}
+
+.stepper-row {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+
+.stepper-btn {
+  width: 84rpx;
+  height: 84rpx;
+  border-radius: 42rpx;
+  background: #F5F5F7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stepper-btn:active {
+  background: #ECECF2;
+}
+
+.stepper-btn-label {
+  color: var(--flo-ink);
+  font-size: 48rpx;
+  line-height: 52rpx;
+  font-weight: 600;
+}
+
+.stepper-track {
+  flex: 1;
+  height: 20rpx;
+  border-radius: 999rpx;
+  background: #EFEFF3;
+  overflow: hidden;
+}
+
+.stepper-fill {
+  height: 100%;
+  border-radius: 999rpx;
+  background: var(--flo-pink);
+}
+
+/* Card */
+.card {
+  border-radius: 40rpx;
+  background: #ffffff;
+  border: 2rpx solid #EFEFF3;
+  padding: 36rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 28rpx;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.card-title {
+  color: var(--flo-ink);
+  font-size: 34rpx;
+  font-weight: 700;
+}
+
+.card-body {
+  color: #5B5D67;
+  font-size: 28rpx;
+  line-height: 42rpx;
+  font-weight: 500;
+}
+
+.icon-btn {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-arrow {
+  color: var(--flo-muted);
+  font-size: 36rpx;
+}
+
+/* Actions */
+.action-row {
+  display: flex;
+  gap: 24rpx;
+}
+
+.action-btn {
+  flex: 1;
+  min-height: 96rpx;
+  border-radius: 32rpx;
+  background: #111217;
+  color: #ffffff;
+  font-size: 30rpx;
+  font-weight: 700;
+  line-height: 96rpx;
+  text-align: center;
+  padding: 0;
+  border: none;
+}
+
+.action-btn::after {
+  border: none;
+}
+
+.delete-action-btn {
+  background: #FFF1F3;
+  color: #D14A72;
+  border: 2rpx solid #FCD6DD;
+}

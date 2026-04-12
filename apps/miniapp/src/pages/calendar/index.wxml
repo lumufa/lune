@@ -1,0 +1,55 @@
+<view class="screen calendar-screen">
+  <view class="toolbar">
+    <view class="nav-btn" bindtap="prevMonth">
+      <text class="nav-icon">‹</text>
+    </view>
+    <view class="header-copy">
+      <text class="header-title">{{monthLabel}}</text>
+      <text class="header-subtle">{{copy.tapDateHint}}</text>
+    </view>
+    <view class="nav-btn" bindtap="nextMonth">
+      <text class="nav-icon">›</text>
+    </view>
+  </view>
+
+  <view class="calendar-card">
+    <view class="week-row">
+      <text class="week-day" wx:for="{{weekDays}}" wx:key="*this">{{item}}</text>
+    </view>
+    <view class="grid">
+      <view wx:for="{{calendarDays}}" wx:key="key" class="day-wrap">
+        <view wx:if="{{item.isEmpty}}" class="empty-cell"></view>
+        <view
+          wx:else
+          class="day-button {{item.isToday ? 'today-button' : ''}} {{item.isPeriod ? 'period-button' : ''}} {{item.isPredicted ? 'predicted-button' : ''}}"
+          data-date-key="{{item.dateKey}}"
+          data-record-id="{{item.recordId}}"
+          bindtap="openDate"
+        >
+          <text class="day-label {{item.isToday ? 'today-label' : ''}} {{item.isPeriod ? 'period-label' : ''}} {{item.isPredicted ? 'predicted-label' : ''}}">{{item.day}}</text>
+        </view>
+        <view class="dot-area">
+          <view wx:if="{{item.hasSymptoms && !item.isPeriod}}" class="symptom-dot"></view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="legend-card">
+    <text class="legend-title">{{copy.legendTitle}}</text>
+    <view class="legend-row">
+      <view class="legend-item">
+        <view class="legend-dot legend-dot-period"></view>
+        <text class="legend-text">{{copy.legendPeriod}}</text>
+      </view>
+      <view class="legend-item">
+        <view class="legend-dot legend-dot-predicted"></view>
+        <text class="legend-text">{{copy.legendPredicted}}</text>
+      </view>
+      <view class="legend-item">
+        <view class="legend-dot legend-dot-symptom"></view>
+        <text class="legend-text">{{copy.legendSymptom}}</text>
+      </view>
+    </view>
+  </view>
+</view>

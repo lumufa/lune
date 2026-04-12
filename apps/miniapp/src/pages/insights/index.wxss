@@ -1,0 +1,161 @@
+.lang-btn {
+  min-width: 96rpx;
+  min-height: 60rpx;
+  line-height: 60rpx;
+  padding: 0 22rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.hero-block {
+  padding: 0 4rpx 4rpx;
+}
+
+.hero-block .hero-subtitle {
+  margin-top: 0;
+  margin-bottom: 20rpx;
+}
+
+.insight-card {
+  padding: 32rpx;
+}
+
+.insight-card:active {
+  background: var(--surface-sunken);
+}
+
+.data-head-left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.data-head-left .muted {
+  font-size: 24rpx;
+}
+
+.data-score {
+  color: var(--ink);
+  font-size: 44rpx;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.5rpx;
+}
+
+.data-score-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4rpx;
+}
+
+.score-caption {
+  color: var(--muted);
+  font-size: 22rpx;
+}
+
+.detail-hint {
+  display: block;
+  margin-top: 20rpx;
+  color: var(--muted-2);
+  font-size: 24rpx;
+}
+
+.detail-block {
+  margin-top: 20rpx;
+  padding-top: 24rpx;
+  border-top: 1rpx solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.dist-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.dist-label {
+  min-width: 100rpx;
+  color: var(--ink-2);
+  font-size: 26rpx;
+}
+
+.dist-label.section-hint {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 24rpx;
+}
+
+.dist-track {
+  flex: 1;
+  height: 10rpx;
+  border-radius: 999rpx;
+  background: var(--bg-dim);
+  overflow: hidden;
+}
+
+.dist-fill {
+  height: 100%;
+  border-radius: 999rpx;
+  background: var(--accent);
+}
+
+.dist-percent {
+  width: 72rpx;
+  text-align: right;
+  color: var(--ink);
+  font-size: 26rpx;
+  font-weight: 600;
+}
+
+.detail-caption {
+  display: block;
+  margin-top: 4rpx;
+  font-size: 24rpx;
+}
+
+.mood-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 20rpx;
+  flex-wrap: wrap;
+}
+
+.relation-arrow {
+  color: var(--muted-2);
+  font-size: 26rpx;
+}
+
+.detail-tags {
+  margin-top: 4rpx;
+}
+
+.bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 12rpx;
+  margin-top: 8rpx;
+  min-height: 140rpx;
+  padding: 16rpx 0 0;
+}
+
+.bar-track {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  height: 100%;
+}
+
+.bar {
+  width: 100%;
+  max-width: 48rpx;
+  border-radius: 8rpx 8rpx 0 0;
+  background: var(--accent);
+  opacity: 0.85;
+}

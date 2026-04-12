@@ -1,0 +1,87 @@
+<view class="screen">
+  <view class="toolbar">
+    <text class="page-title">{{copy.heroTitle}}</text>
+    <button class="ghost-btn lang-btn" size="mini" bindtap="toggleLanguage">{{copy.languageButtonLabel}}</button>
+  </view>
+
+  <view class="hero-block" wx:if="{{dashboard}}">
+    <text class="hero-subtitle">{{copy.heroSubtitle}}</text>
+    <view class="tag-row"><text class="tag">{{copy.interactiveLabel}}</text></view>
+  </view>
+
+  <view class="stack" wx:if="{{dashboard}}">
+    <view class="panel insight-card" data-card="breakdown" bindtap="toggleCard">
+      <view class="row">
+        <view class="data-head-left">
+          <text class="card-title">{{copy.breakdownTitle}}</text>
+          <text class="muted">{{copy.breakdownSubtitle}}</text>
+        </view>
+        <text class="data-score">{{breakdownPercent}}%</text>
+      </view>
+      <text class="detail-hint" wx:if="{{!isBreakdownExpanded}}">{{copy.tapToExpand}}</text>
+      <text class="detail-hint" wx:if="{{isBreakdownExpanded}}">{{copy.tapToCollapse}}</text>
+      <view class="detail-block" wx:if="{{isBreakdownExpanded}}">
+        <view class="dist-row" wx:for="{{breakdownItems}}" wx:key="key">
+          <text class="dist-label">{{item.label}}</text>
+          <view class="dist-track">
+            <view class="dist-fill" style="{{item.fillStyle}}"></view>
+          </view>
+          <text class="dist-percent">{{item.percent}}%</text>
+        </view>
+        <text class="muted detail-caption">{{copy.breakdownDetailCaption}}</text>
+      </view>
+    </view>
+
+    <view class="panel insight-card" data-card="correlation" bindtap="toggleCard">
+      <view class="row">
+        <view class="data-head-left">
+          <text class="card-title">{{copy.symptomTitle}}</text>
+          <text class="muted">{{copy.symptomSubtitle}}</text>
+        </view>
+        <text class="data-score">{{correlationPercent}}%</text>
+      </view>
+      <view class="mood-row">
+        <text class="pill">{{moodA}}</text>
+        <text class="relation-arrow">→</text>
+        <text class="pill">{{moodB}}</text>
+      </view>
+      <text class="detail-hint" wx:if="{{!isCorrelationExpanded}}">{{copy.tapToExpand}}</text>
+      <text class="detail-hint" wx:if="{{isCorrelationExpanded}}">{{copy.tapToCollapse}}</text>
+      <view class="detail-block" wx:if="{{isCorrelationExpanded}}">
+        <text class="dist-label section-hint">{{copy.topSymptomsLabel}}</text>
+        <view class="tag-row detail-tags">
+          <text class="tag" wx:for="{{symptomLabels}}" wx:key="*this">{{item}}</text>
+        </view>
+        <text class="muted detail-caption">{{copy.correlationDetailCaption}}</text>
+      </view>
+    </view>
+
+    <view class="panel insight-card" data-card="predictability" bindtap="toggleCard">
+      <view class="row">
+        <view class="data-head-left">
+          <text class="card-title">{{copy.predictabilityTitle}}</text>
+          <text class="muted">{{copy.predictabilitySubtitle}}</text>
+        </view>
+        <view class="data-score-wrap">
+          <text class="data-score">{{predictabilityPercent}}%</text>
+          <text class="score-caption">{{copy.scoreLabel}}</text>
+        </view>
+      </view>
+      <text class="detail-hint" wx:if="{{!isPredictabilityExpanded}}">{{copy.tapToExpand}}</text>
+      <text class="detail-hint" wx:if="{{isPredictabilityExpanded}}">{{copy.tapToCollapse}}</text>
+      <view class="detail-block" wx:if="{{isPredictabilityExpanded}}">
+        <view class="bar-chart">
+          <view class="bar-track" wx:for="{{barHeights}}" wx:key="index">
+            <view class="bar" style="height: {{item}}rpx;"></view>
+          </view>
+        </view>
+        <text class="muted detail-caption">{{copy.predictabilityDetailCaption}}</text>
+        <text class="muted detail-caption">{{predictabilityRationale}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="panel empty-state" wx:else>
+    {{copy.emptyState}}
+  </view>
+</view>

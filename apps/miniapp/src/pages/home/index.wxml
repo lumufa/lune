@@ -1,0 +1,57 @@
+<view class="screen home-screen">
+  <view class="toolbar">
+    <image class="brand-avatar" src="/assets/haven-icon.png" mode="aspectFill" />
+    <view class="date-block">
+      <text class="date-text">{{todayLabel}}</text>
+    </view>
+    <view class="calendar-btn" bindtap="openCalendar">
+      <text class="calendar-icon">📅</text>
+    </view>
+  </view>
+
+  <view class="hero-panel">
+    <view class="hero-glow-large"></view>
+    <view class="hero-glow-small"></view>
+
+    <view class="ring-outer">
+      <view class="ring-accent"></view>
+      <view class="ring-inner" wx:if="{{cycleDay > 0}}">
+        <text class="ring-value">{{cycleDay}}</text>
+        <text class="ring-caption">{{copy.dayUnit}}</text>
+      </view>
+      <view class="ring-inner" wx:else>
+        <text class="ring-caption">—</text>
+      </view>
+    </view>
+
+    <view class="hero-copy" wx:if="{{hasNextPeriod}}">
+      <text class="hero-value {{isLate ? 'hero-value-warning' : ''}}">{{daysUntilNext}} {{copy.dayUnit}}</text>
+      <text class="hero-subtle">{{copy.predictedDatePrefix}} {{predictedDate}}</text>
+    </view>
+
+    <button class="primary-btn hero-btn {{todayRecordId ? 'secondary-hero-btn' : ''}}" bindtap="openLog">
+      {{todayRecordId ? copy.editTodayLog : copy.logToday}}
+    </button>
+  </view>
+
+  <view class="summary-card">
+    <view class="summary-head">
+      <text class="summary-title">{{copy.cycleSummary}}</text>
+      <view class="summary-action" bindtap="openCalendar">
+        <text class="summary-arrow">→</text>
+      </view>
+    </view>
+    <view class="summary-row summary-row-border">
+      <text class="summary-label">{{copy.averageCycle}}</text>
+      <text class="summary-value">{{averageCycleLength}} {{copy.dayUnit}}</text>
+    </view>
+    <view class="summary-row summary-row-border">
+      <text class="summary-label">{{copy.averagePeriod}}</text>
+      <text class="summary-value">{{averagePeriodLength}} {{copy.dayUnit}}</text>
+    </view>
+    <view class="summary-row">
+      <text class="summary-label">{{copy.logCount}}</text>
+      <text class="summary-value">{{recordCount}} {{copy.logCountUnit}}</text>
+    </view>
+  </view>
+</view>

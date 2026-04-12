@@ -1,0 +1,59 @@
+<view class="screen onboarding-screen">
+  <view class="toolbar center-toolbar">
+    <button class="ghost-btn lang-btn" size="mini" bindtap="toggleLanguage">{{copy.languageButtonLabel}}</button>
+  </view>
+
+  <view class="hero-panel">
+    <view class="hero-glow-a"></view>
+    <view class="hero-glow-b"></view>
+    <image class="brand-icon" src="/assets/haven-icon.png" mode="aspectFill" />
+    <text class="brand-name">{{copy.brandChip}}</text>
+    <text class="hero-title">{{copy.heroTitleA}}</text>
+    <text class="hero-title">{{copy.heroTitleB}}</text>
+    <text class="hero-subtitle">{{copy.heroSubtitle}}</text>
+  </view>
+
+  <view class="consent-card">
+    <view class="consent-icon-wrap privacy-icon-bg">
+      <text class="consent-icon">🔒</text>
+    </view>
+    <view class="consent-body">
+      <text class="consent-title">{{copy.authTitleA}}</text>
+      <text class="consent-detail">{{copy.promiseNoteA}}</text>
+    </view>
+    <switch checked="{{acceptsPrivacyPolicy}}" bindchange="togglePrivacyPolicy" color="#FF5B8D" />
+  </view>
+
+  <view class="consent-card">
+    <view class="consent-icon-wrap health-icon-bg">
+      <text class="consent-icon">📋</text>
+    </view>
+    <view class="consent-body">
+      <text class="consent-title">{{copy.authTitleB}}</text>
+      <text class="consent-detail">{{copy.promiseNoteB}}</text>
+    </view>
+    <switch checked="{{acceptsSensitiveData}}" bindchange="toggleSensitiveData" color="#FF5B8D" />
+  </view>
+
+  <view class="consent-card consent-card-muted">
+    <view class="consent-icon-wrap sync-icon-bg">
+      <text class="consent-icon">🔔</text>
+    </view>
+    <view class="consent-body">
+      <text class="consent-title">{{copy.authTitleC}}</text>
+      <text class="consent-detail">{{copy.promiseNoteC}}</text>
+    </view>
+    <view class="sync-badge {{syncReady ? 'sync-badge-ok' : ''}}">
+      <text class="sync-badge-dot">{{syncReady ? '✓' : '○'}}</text>
+    </view>
+  </view>
+
+  <view class="cta-footer">
+    <button
+      class="cta-btn {{acceptsPrivacyPolicy && acceptsSensitiveData ? '' : 'cta-btn-disabled'}}"
+      disabled="{{!acceptsPrivacyPolicy || !acceptsSensitiveData}}"
+      loading="{{isSubmitting}}"
+      bindtap="completeOnboarding"
+    >{{copy.accessButtonLabel}}</button>
+  </view>
+</view>

@@ -1,0 +1,13 @@
+{
+  "name": "women-period-harmony",
+  "version": "1.0.0",
+  "modelVersion": "6.0.2",
+  "description": "HarmonyOS native app for the women period tracker.",
+  "main": "",
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {},
+  "devDependencies": {
+    "@ohos/hypium": "1.0.6"
+  }
+}

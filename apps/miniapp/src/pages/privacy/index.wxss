@@ -1,0 +1,125 @@
+.lang-btn {
+  min-width: 96rpx;
+  min-height: 60rpx;
+  line-height: 60rpx;
+  padding: 0 22rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+.hero-block {
+  padding: 0 4rpx 12rpx;
+}
+
+.setting-list {
+  padding: 8rpx 32rpx;
+  display: flex;
+  flex-direction: column;
+}
+
+.setting-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 26rpx 0;
+  border-bottom: 1rpx solid var(--line);
+}
+
+.setting-item:last-child {
+  border-bottom: none;
+}
+
+.setting-copy {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.setting-title {
+  display: block;
+  color: var(--ink);
+  font-size: 30rpx;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.setting-subtitle {
+  display: block;
+  color: var(--muted);
+  font-size: 24rpx;
+  line-height: 1.5;
+}
+
+.shortcut-panel {
+  padding: 28rpx 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+}
+
+.shortcut-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.shortcut-btn {
+  flex-shrink: 0;
+  min-height: 64rpx;
+  line-height: 64rpx;
+  padding: 0 24rpx;
+  font-size: 26rpx;
+  font-weight: 600;
+}
+
+.access-btn {
+  margin-top: 28rpx;
+}
+
+.compact-actions {
+  margin-top: 20rpx;
+}
+
+.export-panel {
+  padding: 28rpx 32rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.action-panel {
+  padding: 8rpx 32rpx;
+}
+
+.action-item {
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.action-item:last-child {
+  border-bottom: none;
+}
+
+.action-title {
+  display: block;
+  color: var(--ink);
+  font-size: 28rpx;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.action-meta {
+  display: block;
+  color: var(--muted);
+  font-size: 24rpx;
+  line-height: 1.5;
+}

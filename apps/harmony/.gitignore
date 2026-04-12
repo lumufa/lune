@@ -1,0 +1,16 @@
+# HarmonyOS native app build outputs
+**/build/
+**/.preview/
+**/.hvigor/
+**/generated/
+oh_modules/
+
+# IDE and local machine files
+.idea/
+.deveco/
+local.properties
+
+# Packaged artifacts
+*.hap
+*.har
+*.hsp

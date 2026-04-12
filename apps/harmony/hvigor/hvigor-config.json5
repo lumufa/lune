@@ -1,0 +1,6 @@
+{
+  "modelVersion": "6.0.2",
+  "dependencies": {
+    "@ohos/hvigor-ohos-plugin": "6.22.3"
+  }
+}

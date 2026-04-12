@@ -1,0 +1,69 @@
+<view class="screen settings-screen">
+  <view class="header">
+    <text class="header-title">{{copy.title}}</text>
+    <text class="header-subtle">{{copy.subtitle}}</text>
+  </view>
+
+  <!-- Cycle length stepper -->
+  <view class="stepper-card">
+    <view class="stepper-head">
+      <text class="stepper-label">{{copy.cycleLengthLabel}}</text>
+      <text class="stepper-value">{{cycleLength}} {{copy.dayUnit}}</text>
+    </view>
+    <view class="stepper-row">
+      <view class="stepper-btn" bindtap="decreaseCycle">
+        <text class="stepper-btn-label">-</text>
+      </view>
+      <view class="stepper-track">
+        <view class="stepper-fill" style="width: {{cycleFillPercent}}%;"></view>
+      </view>
+      <view class="stepper-btn" bindtap="increaseCycle">
+        <text class="stepper-btn-label">+</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- Period length stepper -->
+  <view class="stepper-card">
+    <view class="stepper-head">
+      <text class="stepper-label">{{copy.periodLengthLabel}}</text>
+      <text class="stepper-value">{{periodLength}} {{copy.dayUnit}}</text>
+    </view>
+    <view class="stepper-row">
+      <view class="stepper-btn" bindtap="decreasePeriod">
+        <text class="stepper-btn-label">-</text>
+      </view>
+      <view class="stepper-track">
+        <view class="stepper-fill" style="width: {{periodFillPercent}}%;"></view>
+      </view>
+      <view class="stepper-btn" bindtap="increasePeriod">
+        <text class="stepper-btn-label">+</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- Reminders card -->
+  <view class="card">
+    <view class="card-head">
+      <text class="card-title">{{copy.remindersTitle}}</text>
+      <view class="icon-btn" bindtap="openReminders">
+        <text class="icon-arrow">→</text>
+      </view>
+    </view>
+    <text class="card-body">{{reminderSummary}}</text>
+  </view>
+
+  <!-- Privacy card -->
+  <view class="card">
+    <text class="card-title">{{copy.privacyTitle}}</text>
+    <text class="card-body">{{copy.privacyBody}}</text>
+    <view class="action-row">
+      <button class="action-btn" bindtap="exportData">
+        {{copy.exportLabel}}
+      </button>
+      <button class="action-btn delete-action-btn" bindtap="deleteAccount">
+        {{copy.deleteLabel}}
+      </button>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,16 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "\u9e3f\u8499\u624b\u673a\u5165\u53e3\u6a21\u5757"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "\u7ecf\u671f\u8bb0\u5f55\u9996\u9875\u80fd\u529b"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "\u534a\u590f\u5468\u671f"
+    }
+  ]
+}

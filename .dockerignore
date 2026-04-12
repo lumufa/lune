@@ -1,0 +1,11 @@
+node_modules
+apps/miniapp
+apps/api/dist
+packages/shared/dist
+packages/prediction/dist
+.git
+.wx-local
+.tooling
+logs
+tmp
+*.log

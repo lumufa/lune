@@ -1,0 +1,107 @@
+<view class="screen">
+  <view class="header">
+    <text class="header-title">{{isEditMode ? copy.heroEyebrowEdit : copy.heroEyebrowCreate}}</text>
+    <text class="header-subtle">{{isEditMode ? copy.heroSubtitleEdit : copy.heroSubtitleCreate}}</text>
+  </view>
+
+  <view class="record-card stack form-stack">
+    <text class="card-title">{{copy.startAtLabel}}</text>
+    <view class="datetime-row">
+      <view class="date-field">
+        <text class="field-label">{{copy.startLabel}}</text>
+        <picker class="datetime-picker" mode="date" value="{{startDatePart}}" bindchange="changeStartDatePart">
+          <view class="picker-field">{{startDatePart}}</view>
+        </picker>
+      </view>
+      <view class="date-field">
+        <text class="field-label">{{copy.endLabel}}</text>
+        <picker class="datetime-picker" mode="date" value="{{endDatePart}}" bindchange="changeEndDatePart">
+          <view class="picker-field">{{endDatePart}}</view>
+        </picker>
+      </view>
+    </view>
+  </view>
+
+  <view class="record-card stack form-stack">
+    <text class="card-title">{{copy.flowLabel}}</text>
+    <view class="flow-grid">
+      <view
+        class="choice-chip flow-chip {{flowLevel === item.value ? 'choice-chip-active' : ''}}"
+        wx:for="{{flowItems}}"
+        wx:key="value"
+        data-value="{{item.value}}"
+        bindtap="selectFlow"
+      >
+        {{item.label}}
+      </view>
+    </view>
+  </view>
+
+  <view class="record-card stack form-stack">
+    <text class="card-title">{{copy.painLabel}}</text>
+    <view class="flow-grid">
+      <view
+        class="choice-chip flow-chip {{painLevel === item.value ? 'choice-chip-active' : ''}}"
+        wx:for="{{painItems}}"
+        wx:key="value"
+        data-value="{{item.value}}"
+        bindtap="selectPain"
+      >
+        {{item.label}}
+      </view>
+    </view>
+    <text class="pain-description">{{painDescription}}</text>
+  </view>
+
+  <view class="record-card stack form-stack">
+    <view class="card-head">
+      <text class="card-title">{{copy.symptomsLabel}}</text>
+      <text class="card-meta">{{selectedSymptomCount}} {{copy.selectedUnit}}</text>
+    </view>
+    <view class="symptom-grid">
+      <view
+        class="symptom-item {{selectedSymptoms.indexOf(item.value) > -1 ? 'symptom-item-active' : ''}}"
+        wx:for="{{symptomItems}}"
+        wx:key="value"
+        data-value="{{item.value}}"
+        bindtap="toggleSymptom"
+      >
+        <text class="symptom-label {{selectedSymptoms.indexOf(item.value) > -1 ? 'symptom-label-active' : ''}}">{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="record-card stack form-stack">
+    <text class="card-title">{{copy.moodLabel}}</text>
+    <view class="mood-wrap">
+      <view
+        class="mood-chip {{mood === item.value ? 'mood-chip-active' : ''}}"
+        wx:for="{{moodItems}}"
+        wx:key="value"
+        data-value="{{item.value}}"
+        bindtap="selectMood"
+      >
+        <text class="mood-label {{mood === item.value ? 'mood-label-active' : ''}}">{{item.label}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="record-card stack form-stack">
+    <text class="card-title">{{copy.noteLabel}}</text>
+    <textarea
+      class="textarea"
+      maxlength="200"
+      placeholder="{{copy.notePlaceholder}}"
+      placeholder-style="color: #A0A2AC;"
+      bindinput="changeNote"
+      value="{{note}}"
+    />
+  </view>
+
+  <button class="save-btn" loading="{{isSubmitting}}" bindtap="submitRecord">
+    {{isEditMode ? copy.saveEditLabel : copy.saveCreateLabel}}
+  </button>
+  <button class="danger-btn delete-btn" loading="{{isSubmitting}}" bindtap="deleteCurrentRecord" wx:if="{{isEditMode}}">
+    {{copy.deleteLabel}}
+  </button>
+</view>

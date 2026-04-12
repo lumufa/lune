@@ -1,0 +1,52 @@
+<view class="screen">
+  <view class="toolbar">
+    <text class="page-title">{{copy.heroTitlePrefix}}</text>
+    <button class="ghost-btn lang-btn" size="mini" bindtap="toggleLanguage">{{copy.languageButtonLabel}}</button>
+  </view>
+
+  <view class="hero-block" wx:if="{{preference}}">
+    <text class="hero-subtitle">{{copy.timePickerLabel}}</text>
+    <text class="time-value">{{preference.quietHours.start}} - {{preference.quietHours.end}}</text>
+  </view>
+
+  <view class="panel setting-card" wx:if="{{preference}}">
+    <view class="setting-row">
+      <text class="field-label">{{copy.quietStartLabel}}</text>
+      <picker mode="time" value="{{preference.quietHours.start}}" bindchange="changeQuietStart">
+        <view class="picker-field">{{preference.quietHours.start}}</view>
+      </picker>
+    </view>
+    <view class="setting-row">
+      <text class="field-label">{{copy.quietEndLabel}}</text>
+      <picker mode="time" value="{{preference.quietHours.end}}" bindchange="changeQuietEnd">
+        <view class="picker-field">{{preference.quietHours.end}}</view>
+      </picker>
+    </view>
+  </view>
+
+  <text class="section-title">{{copy.reminderSectionTitle}}</text>
+  <view class="panel reminder-panel" wx:if="{{preference}}">
+    <view class="reminder-item" wx:for="{{reminderViews}}" wx:key="type" data-type="{{item.type}}">
+      <view class="reminder-row">
+        <view class="reminder-left">
+          <text class="reminder-icon">{{item.icon}}</text>
+          <view class="reminder-copy">
+            <text class="reminder-title">{{item.label}}</text>
+            <text class="reminder-detail">{{item.detail}}</text>
+          </view>
+        </view>
+        <switch checked="{{item.enabled}}" bindchange="toggleItem" data-type="{{item.type}}" color="#FF5B8D" />
+      </view>
+    </view>
+  </view>
+  <view class="panel empty-state" wx:else>
+    {{copy.loadFailed}}
+  </view>
+
+  <button class="primary-btn save-btn" wx:if="{{preference}}" loading="{{isSaving}}" bindtap="savePreference">
+    {{copy.saveLabel}}
+  </button>
+  <button class="ghost-btn back-btn" wx:if="{{preference}}" bindtap="backToCalendar">
+    {{copy.backToCalendarLabel}}
+  </button>
+</view>
