@@ -1,59 +1,93 @@
-<view class="screen onboarding-screen">
-  <view class="toolbar center-toolbar">
-    <button class="ghost-btn lang-btn" size="mini" bindtap="toggleLanguage">{{copy.languageButtonLabel}}</button>
+<view class="screen">
+  <!-- Top header -->
+  <view class="top-bar">
+    <view class="logo-mark">
+      <view class="logo-ring"></view>
+      <view class="logo-dot"></view>
+      <view class="logo-top-dot"></view>
+    </view>
+    <button class="ghost-btn lang-btn" size="mini" bindtap="toggleLanguage">{{copy.langLabel}}</button>
   </view>
 
-  <view class="hero-panel">
-    <view class="hero-glow-a"></view>
-    <view class="hero-glow-b"></view>
-    <image class="brand-icon" src="/assets/haven-icon.png" mode="aspectFill" />
-    <text class="brand-name">{{copy.brandChip}}</text>
-    <text class="hero-title">{{copy.heroTitleA}}</text>
-    <text class="hero-title">{{copy.heroTitleB}}</text>
-    <text class="hero-subtitle">{{copy.heroSubtitle}}</text>
+  <!-- Page 0: Hero -->
+  <view class="page hero-page" wx:if="{{currentPage === 0}}">
+    <view class="hero-circle as">
+      <view class="circle-glow"></view>
+      <view class="circle-white"></view>
+      <view class="circle-dash"></view>
+      <view class="circle-center">
+        <text class="circle-icon">💧</text>
+      </view>
+      <view class="orbit-dot"></view>
+    </view>
+
+    <view class="hero-text au delay-1">
+      <text class="hero-line">{{copy.heroA}}</text>
+      <text class="hero-line hero-pink">{{copy.heroB}}</text>
+    </view>
+    <text class="hero-sub au delay-2">{{copy.heroSub}}</text>
   </view>
 
-  <view class="consent-card">
-    <view class="consent-icon-wrap privacy-icon-bg">
-      <text class="consent-icon">🔒</text>
-    </view>
-    <view class="consent-body">
-      <text class="consent-title">{{copy.authTitleA}}</text>
-      <text class="consent-detail">{{copy.promiseNoteA}}</text>
-    </view>
-    <switch checked="{{acceptsPrivacyPolicy}}" bindchange="togglePrivacyPolicy" color="#FF5B8D" />
-  </view>
-
-  <view class="consent-card">
-    <view class="consent-icon-wrap health-icon-bg">
-      <text class="consent-icon">📋</text>
-    </view>
-    <view class="consent-body">
-      <text class="consent-title">{{copy.authTitleB}}</text>
-      <text class="consent-detail">{{copy.promiseNoteB}}</text>
-    </view>
-    <switch checked="{{acceptsSensitiveData}}" bindchange="toggleSensitiveData" color="#FF5B8D" />
-  </view>
-
-  <view class="consent-card consent-card-muted">
-    <view class="consent-icon-wrap sync-icon-bg">
-      <text class="consent-icon">🔔</text>
-    </view>
-    <view class="consent-body">
-      <text class="consent-title">{{copy.authTitleC}}</text>
-      <text class="consent-detail">{{copy.promiseNoteC}}</text>
-    </view>
-    <view class="sync-badge {{syncReady ? 'sync-badge-ok' : ''}}">
-      <text class="sync-badge-dot">{{syncReady ? '✓' : '○'}}</text>
+  <!-- Page 1: Features -->
+  <view class="page feature-page" wx:if="{{currentPage === 1}}">
+    <text class="section-title au">{{copy.featureTitle}}</text>
+    <view class="feature-list">
+      <view class="feature-card ac delay-1" wx:for="{{features}}" wx:key="icon">
+        <view class="feature-icon-wrap">
+          <text class="feature-icon">{{item.icon}}</text>
+        </view>
+        <text class="feature-label">{{item.title}}</text>
+      </view>
     </view>
   </view>
 
-  <view class="cta-footer">
-    <button
-      class="cta-btn {{acceptsPrivacyPolicy && acceptsSensitiveData ? '' : 'cta-btn-disabled'}}"
-      disabled="{{!acceptsPrivacyPolicy || !acceptsSensitiveData}}"
-      loading="{{isSubmitting}}"
-      bindtap="completeOnboarding"
-    >{{copy.accessButtonLabel}}</button>
+  <!-- Page 2: Trust -->
+  <view class="page trust-page" wx:if="{{currentPage === 2}}">
+    <text class="section-title au">{{copy.trustTitle}}</text>
+    <view class="trust-card as delay-1">
+      <view class="trust-row">
+        <view class="trust-item ac" style="animation-delay: 0.24s">
+          <text class="trust-emoji">{{trustItems[0].icon}}</text>
+          <text class="trust-label">{{trustItems[0].label}}</text>
+        </view>
+        <view class="trust-item ac" style="animation-delay: 0.30s">
+          <text class="trust-emoji">{{trustItems[1].icon}}</text>
+          <text class="trust-label">{{trustItems[1].label}}</text>
+        </view>
+      </view>
+      <view class="trust-row">
+        <view class="trust-item ac" style="animation-delay: 0.36s">
+          <text class="trust-emoji">{{trustItems[2].icon}}</text>
+          <text class="trust-label">{{trustItems[2].label}}</text>
+        </view>
+        <view class="trust-item ac" style="animation-delay: 0.42s">
+          <text class="trust-emoji">{{trustItems[3].icon}}</text>
+          <text class="trust-label">{{trustItems[3].label}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- Bottom -->
+  <view class="bottom-bar">
+    <button class="pink-btn" loading="{{isSubmitting}}" bindtap="onMainAction">
+      <view class="btn-shimmer"></view>
+      <text class="btn-text">{{currentPage === 0 ? copy.btnLearn : currentPage === 1 ? copy.btnContinue : copy.btnStart}}</text>
+    </button>
+    <view class="bottom-row">
+      <text class="skip-btn" bindtap="skipToEnd" wx:if="{{currentPage < 2}}">{{copy.skip}}</text>
+      <view wx:else class="skip-placeholder"></view>
+      <view class="pip-row">
+        <view
+          class="pip {{currentPage === index ? 'pip-on' : ''}}"
+          wx:for="{{[0,1,2]}}"
+          wx:key="*this"
+          data-page="{{item}}"
+          bindtap="goToPage"
+        ></view>
+      </view>
+      <view class="skip-placeholder"></view>
+    </view>
+    <text class="footer-note af" wx:if="{{currentPage === 2}}">{{copy.footerNote}}</text>
   </view>
 </view>

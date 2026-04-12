@@ -21,29 +21,21 @@ function isAlreadyOnboarded(): boolean {
 function markOnboarded(): void {
   try {
     wx.setStorageSync(ONBOARDED_STORAGE_KEY, true);
-  } catch {
-    // Ignore storage failures; user can still complete onboarding this session.
-  }
+  } catch {}
 }
 
 interface OnboardingCopy {
-  navTitle: string;
-  languageButtonLabel: string;
-  brandChip: string;
-  heroTitleA: string;
-  heroTitleB: string;
-  heroSubtitle: string;
-  promiseValueA: string;
-  promiseNoteA: string;
-  promiseValueB: string;
-  promiseNoteB: string;
-  promiseValueC: string;
-  promiseNoteC: string;
-  authTitleA: string;
-  authTitleB: string;
-  authTitleC: string;
-  accessButtonLabel: string;
-  toastNeedConsent: string;
+  langLabel: string;
+  heroA: string;
+  heroB: string;
+  heroSub: string;
+  featureTitle: string;
+  trustTitle: string;
+  btnLearn: string;
+  btnContinue: string;
+  btnStart: string;
+  skip: string;
+  footerNote: string;
   networkModalTitle: string;
   networkModalContent: string;
   initFailedToast: string;
@@ -51,29 +43,30 @@ interface OnboardingCopy {
   sensitivePurpose: string;
 }
 
+interface FeatureItem {
+  icon: string;
+  title: string;
+}
+
+interface TrustItem {
+  icon: string;
+  label: string;
+}
+
 function buildCopy(language: DisplayLanguage): OnboardingCopy {
   const isEn = language === "en";
-
   return {
-    navTitle: "Lune",
-    languageButtonLabel: getDisplayLanguageToggleLabel(language),
-    brandChip: "LUNE",
-    heroTitleA: isEn ? "Track your cycle" : "把经期记录做得",
-    heroTitleB: isEn ? "quietly and reliably." : "更安静，也更可信。",
-    heroSubtitle: isEn
-      ? "Recording, forecasting, reminders and privacy control — nothing more."
-      : "只保留记录、预测、提醒与隐私控制，不多也不少。",
-    promiseValueA: isEn ? "Minimal" : "最小化",
-    promiseNoteA: isEn ? "Only required fields kept" : "只保留记录所需字段",
-    promiseValueB: isEn ? "Exportable" : "可导出",
-    promiseNoteB: isEn ? "View and deletion paths available" : "支持查看与删除链路",
-    promiseValueC: isEn ? "Gentle" : "轻提醒",
-    promiseNoteC: isEn ? "No disturbance, no panic" : "不打扰，不夸张",
-    authTitleA: isEn ? "Privacy Policy" : "隐私政策",
-    authTitleB: isEn ? "Sensitive Health Data" : "敏感健康数据",
-    authTitleC: isEn ? "Data Sync" : "数据同步",
-    accessButtonLabel: isEn ? "Access Data Log" : "访问数据日志",
-    toastNeedConsent: isEn ? "Please confirm required consent first" : "请先确认必要授权",
+    langLabel: getDisplayLanguageToggleLabel(language),
+    heroA: isEn ? "Your cycle data" : "你的经期数据",
+    heroB: isEn ? "stays in your hands" : "只留在你手里",
+    heroSub: isEn ? "Precise forecast · Smart reminders · No sign-up" : "精准预测 · 智能提醒 · 无需注册",
+    featureTitle: isEn ? "Core features" : "核心功能",
+    trustTitle: isEn ? "Privacy promise" : "隐私承诺",
+    btnLearn: isEn ? "Learn more" : "了解更多",
+    btnContinue: isEn ? "Continue" : "继 续",
+    btnStart: isEn ? "Start tracking" : "开始记录",
+    skip: isEn ? "Skip" : "跳过",
+    footerNote: isEn ? "No sign-up · Data stays local" : "无需注册 · 数据仅存本地",
     networkModalTitle: isEn ? "Local API is offline" : "本地接口未连接",
     networkModalContent: isEn
       ? "Run npm.cmd run start:api in C:\\women_period, then submit again."
@@ -86,76 +79,85 @@ function buildCopy(language: DisplayLanguage): OnboardingCopy {
   };
 }
 
+function buildFeatures(language: DisplayLanguage): FeatureItem[] {
+  const isEn = language === "en";
+  return [
+    { icon: "📅", title: isEn ? "No account, open and use" : "零账号，打开就用" },
+    { icon: "✅", title: isEn ? "Export your data anytime" : "数据随时带走" },
+    { icon: "🔔", title: isEn ? "Quiet reminders" : "安静提醒" }
+  ];
+}
+
+function buildTrustItems(language: DisplayLanguage): TrustItem[] {
+  const isEn = language === "en";
+  return [
+    { icon: "🔒", label: isEn ? "End-to-end encrypted" : "端到端加密存储" },
+    { icon: "📱", label: isEn ? "Data stays on device" : "数据仅存设备本地" },
+    { icon: "🚫", label: isEn ? "Never sell user data" : "绝不出售用户数据" },
+    { icon: "🧹", label: isEn ? "Delete anytime" : "随时一键彻底删除" }
+  ];
+}
+
 const DEFAULT_LANGUAGE = getStoredDisplayLanguage();
 
 Page({
   data: {
-    acceptsPrivacyPolicy: false,
-    acceptsSensitiveData: false,
-    syncReady: false,
+    currentPage: 0,
     isSubmitting: false,
     language: DEFAULT_LANGUAGE as DisplayLanguage,
-    copy: buildCopy(DEFAULT_LANGUAGE)
+    copy: buildCopy(DEFAULT_LANGUAGE),
+    features: buildFeatures(DEFAULT_LANGUAGE),
+    trustItems: buildTrustItems(DEFAULT_LANGUAGE)
   },
 
   onShow() {
     if (isAlreadyOnboarded()) {
-      wx.switchTab({
-        url: "/pages/home/index"
-      });
+      wx.switchTab({ url: "/pages/home/index" });
       return;
     }
-
     const language = getStoredDisplayLanguage();
-    this.applyLanguage(language);
-  },
-
-  toggleLanguage() {
-    const nextLanguage = getNextDisplayLanguage(this.data.language as DisplayLanguage);
-    setStoredDisplayLanguage(nextLanguage);
-    this.applyLanguage(nextLanguage);
+    if (language !== this.data.language) {
+      this.applyLanguage(language);
+    }
   },
 
   applyLanguage(language: DisplayLanguage) {
-    const copy = buildCopy(language);
     this.setData({
       language,
-      copy
+      copy: buildCopy(language),
+      features: buildFeatures(language),
+      trustItems: buildTrustItems(language)
     });
-    wx.setNavigationBarTitle({
-      title: copy.navTitle
-    });
+    wx.setNavigationBarTitle({ title: "Lune" });
   },
 
-  togglePrivacyPolicy(event: WechatMiniprogram.CustomEvent<{ value: boolean }>) {
-    const acceptsPrivacyPolicy = Boolean(event.detail.value);
-    const acceptsSensitiveData = this.data.acceptsSensitiveData;
-    this.setData({
-      acceptsPrivacyPolicy,
-      syncReady: acceptsPrivacyPolicy && acceptsSensitiveData
-    });
+  toggleLanguage() {
+    const next = getNextDisplayLanguage(this.data.language as DisplayLanguage);
+    setStoredDisplayLanguage(next);
+    this.applyLanguage(next);
   },
 
-  toggleSensitiveData(event: WechatMiniprogram.CustomEvent<{ value: boolean }>) {
-    const acceptsPrivacyPolicy = this.data.acceptsPrivacyPolicy;
-    const acceptsSensitiveData = Boolean(event.detail.value);
-    this.setData({
-      acceptsSensitiveData,
-      syncReady: acceptsPrivacyPolicy && acceptsSensitiveData
-    });
+  onMainAction() {
+    if (this.data.currentPage < 2) {
+      this.setData({ currentPage: this.data.currentPage + 1 });
+    } else {
+      void this.completeOnboarding();
+    }
+  },
+
+  skipToEnd() {
+    this.setData({ currentPage: 2 });
+  },
+
+  goToPage(event: WechatMiniprogram.BaseEvent) {
+    const page = Number(event.currentTarget.dataset.page);
+    if (page !== this.data.currentPage) {
+      this.setData({ currentPage: page });
+    }
   },
 
   async completeOnboarding() {
-    if (!this.data.acceptsPrivacyPolicy || !this.data.acceptsSensitiveData) {
-      wx.showToast({
-        title: this.data.copy.toastNeedConsent,
-        icon: "none"
-      });
-      return;
-    }
-
     this.setData({ isSubmitting: true });
-
     try {
       await Promise.all([
         api.grantConsent({
@@ -169,13 +171,9 @@ Page({
           purpose: this.data.copy.sensitivePurpose
         })
       ]);
-
       markOnboarded();
       void api.trackEvent("onboarding_complete").catch(() => undefined);
-
-      wx.switchTab({
-        url: "/pages/home/index"
-      });
+      wx.switchTab({ url: "/pages/home/index" });
     } catch (error) {
       if (isApiNetworkError(error)) {
         wx.showModal({
@@ -184,10 +182,7 @@ Page({
           showCancel: false
         });
       } else {
-        wx.showToast({
-          title: this.data.copy.initFailedToast,
-          icon: "none"
-        });
+        wx.showToast({ title: this.data.copy.initFailedToast, icon: "none" });
       }
     } finally {
       this.setData({ isSubmitting: false });
