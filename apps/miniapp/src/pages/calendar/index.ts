@@ -16,6 +16,8 @@ interface CalendarCopy {
   legendPeriod: string;
   legendPredicted: string;
   legendSymptom: string;
+  networkError: string;
+  loadFailed: string;
 }
 
 interface CalendarDay {
@@ -37,7 +39,9 @@ function buildCopy(language: DisplayLanguage): CalendarCopy {
     legendTitle: language === "en" ? "Legend" : "图例",
     legendPeriod: language === "en" ? "Period" : "经期",
     legendPredicted: language === "en" ? "Predicted" : "预测期",
-    legendSymptom: language === "en" ? "Symptoms" : "症状记录"
+    legendSymptom: language === "en" ? "Symptoms" : "症状记录",
+    networkError: language === "en" ? "API offline" : "接口未连接",
+    loadFailed: language === "en" ? "Load failed" : "加载失败"
   };
 }
 
@@ -240,7 +244,7 @@ Page({
       this.buildCalendar(dashboard);
     } catch (error) {
       wx.showToast({
-        title: isApiNetworkError(error) ? "接口未连接" : "加载失败",
+        title: isApiNetworkError(error) ? this.data.copy.networkError : this.data.copy.loadFailed,
         icon: "none"
       });
     }
@@ -281,10 +285,10 @@ Page({
     if (!dateKey) {
       return;
     }
+    const app = getApp<IAppOption>();
     if (recordId) {
-      wx.navigateTo({ url: `/pages/record/index?id=${encodeURIComponent(recordId)}` });
-    } else {
-      wx.navigateTo({ url: "/pages/record/index" });
+      app.editRecordId = recordId;
     }
+    wx.switchTab({ url: "/pages/record/index" });
   }
 });

@@ -28,6 +28,8 @@ interface HomeCopy {
   averagePeriod: string;
   logCount: string;
   logCountUnit: string;
+  networkError: string;
+  loadFailed: string;
 }
 
 function buildCopy(language: DisplayLanguage): HomeCopy {
@@ -51,7 +53,9 @@ function buildCopy(language: DisplayLanguage): HomeCopy {
     averageCycle: language === "en" ? "Average cycle" : "平均周期",
     averagePeriod: language === "en" ? "Average period" : "平均经期",
     logCount: language === "en" ? "Logs" : "记录次数",
-    logCountUnit: language === "en" ? "items" : "条"
+    logCountUnit: language === "en" ? "items" : "条",
+    networkError: language === "en" ? "API offline" : "接口未连接",
+    loadFailed: language === "en" ? "Load failed" : "加载失败"
   };
 }
 
@@ -168,7 +172,7 @@ Page({
       this.buildDerived(dashboard, this.data.language as DisplayLanguage);
     } catch (error) {
       wx.showToast({
-        title: isApiNetworkError(error) ? "接口未连接" : "加载失败",
+        title: isApiNetworkError(error) ? this.data.copy.networkError : this.data.copy.loadFailed,
         icon: "none"
       });
     }

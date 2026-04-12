@@ -29,6 +29,12 @@ interface SettingsCopy {
   privacyBody: string;
   exportLabel: string;
   deleteLabel: string;
+  networkError: string;
+  exportFailed: string;
+  deleteFailed: string;
+  deleteConfirmTitle: string;
+  deleteConfirmContent: string;
+  deleted: string;
 }
 
 function buildCopy(language: DisplayLanguage): SettingsCopy {
@@ -49,7 +55,13 @@ function buildCopy(language: DisplayLanguage): SettingsCopy {
         ? "Your data stays under the current account and can be exported or deleted."
         : "数据仅在当前账号下维护，可随时导出或删除。",
     exportLabel: language === "en" ? "Export data" : "导出数据",
-    deleteLabel: language === "en" ? "Delete account" : "删除账号"
+    deleteLabel: language === "en" ? "Delete account" : "删除账号",
+    networkError: language === "en" ? "API offline" : "接口未连接",
+    exportFailed: language === "en" ? "Export failed" : "导出失败",
+    deleteFailed: language === "en" ? "Delete failed" : "删除失败",
+    deleteConfirmTitle: language === "en" ? "Delete account" : "删除账号",
+    deleteConfirmContent: language === "en" ? "This clears all current user data." : "这会清除当前用户的全部数据。",
+    deleted: language === "en" ? "Deleted" : "已删除"
   };
 }
 
@@ -209,31 +221,25 @@ Page({
   async exportData() {
     try {
       const bundle = await api.exportData();
-      const language = this.data.language as DisplayLanguage;
       const dateStr = bundle.exportedAt.slice(0, 16);
       wx.showModal({
-        title: language === "en" ? "Export data" : "导出数据",
+        title: this.data.copy.exportLabel,
         content: dateStr,
         showCancel: false
       });
     } catch (error) {
       wx.showToast({
-        title: isApiNetworkError(error) ? "接口未连接" : "导出失败",
+        title: isApiNetworkError(error) ? this.data.copy.networkError : this.data.copy.exportFailed,
         icon: "none"
       });
     }
   },
 
   async deleteAccount() {
-    const language = this.data.language as DisplayLanguage;
-
     const confirmed = await new Promise<boolean>((resolve) => {
       wx.showModal({
-        title: language === "en" ? "Delete account" : "删除账号",
-        content:
-          language === "en"
-            ? "This clears all current user data."
-            : "这会清除当前用户的全部数据。",
+        title: this.data.copy.deleteConfirmTitle,
+        content: this.data.copy.deleteConfirmContent,
         confirmColor: "#FF5B8D",
         success: (result) => resolve(Boolean(result.confirm)),
         fail: () => resolve(false)
@@ -247,12 +253,12 @@ Page({
     try {
       await api.deleteAccount();
       wx.showToast({
-        title: language === "en" ? "Deleted" : "已删除",
+        title: this.data.copy.deleted,
         icon: "success"
       });
     } catch (error) {
       wx.showToast({
-        title: isApiNetworkError(error) ? "接口未连接" : "删除失败",
+        title: isApiNetworkError(error) ? this.data.copy.networkError : this.data.copy.deleteFailed,
         icon: "none"
       });
     }

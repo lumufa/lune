@@ -34,8 +34,9 @@ interface PageCopy {
   heroSubtitleCreate: string;
   heroSubtitleEdit: string;
   startAtLabel: string;
-  endAtLabel: string;
-  timeHint: string;
+  startLabel: string;
+  endLabel: string;
+  selectedUnit: string;
   flowLabel: string;
   painLabel: string;
   painGuideButtonLabel: string;
@@ -165,7 +166,7 @@ Page({
     }
 
     // Handle edit context from tab switch (globalData)
-    const app = getApp<{ editRecordId?: string }>();
+    const app = getApp<IAppOption>();
     if (app.editRecordId) {
       const recordId = app.editRecordId;
       app.editRecordId = undefined;
@@ -174,13 +175,31 @@ Page({
       return;
     }
 
-    if (
-      this.data.isEditMode &&
-      this.data.editingRecordId &&
-      this.data.loadedRecordId !== this.data.editingRecordId
-    ) {
-      void this.loadRecordForEdit(this.data.editingRecordId);
-    }
+    // Returning to tab without edit context → reset to create mode
+    this.resetToCreateMode();
+  },
+
+  resetToCreateMode() {
+    const today = todayIso();
+    const now = currentTimeHHmm();
+    const language = this.data.language as DisplayLanguage;
+    this.setData({
+      isEditMode: false,
+      editingRecordId: "",
+      loadedRecordId: "",
+      startDatePart: today,
+      startTimePart: now,
+      endDatePart: today,
+      endTimePart: now,
+      flowLevel: "medium" as FlowLevel,
+      painLevel: 1 as PainLevel,
+      painSummary: getPainLevelLabel(1, language),
+      painDescription: getPainLevelDescription(1, language),
+      selectedSymptoms: ["cramps"] as SymptomTag[],
+      selectedSymptomCount: 1,
+      mood: "steady" as MoodTag,
+      note: ""
+    });
   },
 
   applyLanguage(language: DisplayLanguage) {
@@ -216,6 +235,7 @@ Page({
       const end = splitRecordDateTime(target.endDate);
       const language = this.data.language as DisplayLanguage;
 
+      const symptoms = target.symptoms ?? [];
       this.setData({
         loadedRecordId: recordId,
         startDatePart: start.date,
@@ -226,7 +246,8 @@ Page({
         painLevel: target.painLevel,
         painSummary: getPainLevelLabel(target.painLevel, language),
         painDescription: getPainLevelDescription(target.painLevel, language),
-        selectedSymptoms: target.symptoms,
+        selectedSymptoms: symptoms,
+        selectedSymptomCount: symptoms.filter((s: string) => s !== "none").length,
         mood: target.mood,
         note: target.note ?? ""
       });
