@@ -1,38 +1,32 @@
 {
   "pages": [
     "pages/onboarding/index",
-    "pages/home/index",
     "pages/calendar/index",
-    "pages/record/index",
+    "pages/trends/index",
     "pages/settings/index",
-    "pages/insights/index",
-    "pages/reminders/index",
-    "pages/privacy/index"
+    "pages/record/index",
+    "pages/reminders/index"
   ],
   "window": {
     "navigationBarTitleText": "Lune",
-    "navigationBarBackgroundColor": "#F4F4F6",
+    "navigationBarBackgroundColor": "#FBF8F9",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#F4F4F6",
+    "backgroundColor": "#FBF8F9",
     "backgroundTextStyle": "dark"
   },
   "tabBar": {
-    "color": "#8D8E97",
-    "selectedColor": "#4ECDC4",
+    "color": "#8C8C9A",
+    "selectedColor": "#FF4D6A",
     "backgroundColor": "#FFFFFF",
     "borderStyle": "white",
     "list": [
-      {
-        "pagePath": "pages/home/index",
-        "text": "首页"
-      },
       {
         "pagePath": "pages/calendar/index",
         "text": "日历"
       },
       {
-        "pagePath": "pages/record/index",
-        "text": "记录"
+        "pagePath": "pages/trends/index",
+        "text": "趋势"
       },
       {
         "pagePath": "pages/settings/index",

@@ -1,0 +1,218 @@
+.trends-screen {
+  gap: 24rpx;
+}
+
+.record-count {
+  color: var(--muted);
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+/* ── Empty state ── */
+.empty-card {
+  border-radius: 40rpx;
+  background: var(--surface);
+  border: 1rpx solid rgba(0, 0, 0, 0.03);
+  padding: 64rpx 40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16rpx;
+  text-align: center;
+}
+
+.empty-title {
+  color: var(--ink);
+  font-size: 36rpx;
+  font-weight: 700;
+}
+
+.empty-hint {
+  color: var(--muted);
+  font-size: 26rpx;
+  line-height: 40rpx;
+}
+
+/* ── Guidance card ── */
+.guidance-card {
+  border-radius: 40rpx;
+  background: var(--pink-mist);
+  border: 1rpx solid rgba(0, 0, 0, 0.03);
+  padding: 28rpx 32rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.guidance-progress {
+  height: 12rpx;
+  border-radius: 6rpx;
+  background: var(--pink-border);
+  overflow: hidden;
+}
+
+.guidance-fill {
+  height: 100%;
+  border-radius: 6rpx;
+  background: var(--accent);
+}
+
+.guidance-text {
+  color: var(--ink-2);
+  font-size: 26rpx;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* ── Stats row ── */
+.stats-row {
+  display: flex;
+  gap: 20rpx;
+}
+
+.stat-card {
+  flex: 1;
+  border-radius: 40rpx;
+  background: var(--surface);
+  border: 1rpx solid rgba(0, 0, 0, 0.03);
+  box-shadow: var(--shadow-card);
+  padding: 28rpx 16rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4rpx;
+}
+
+.stat-value {
+  color: var(--accent);
+  font-size: 52rpx;
+  font-weight: 800;
+  line-height: 60rpx;
+}
+
+.stat-unit {
+  color: var(--muted);
+  font-size: 22rpx;
+  font-weight: 500;
+}
+
+.stat-label {
+  color: var(--ink-2);
+  font-size: 22rpx;
+  font-weight: 600;
+  margin-top: 4rpx;
+}
+
+/* ── Flow distribution ── */
+.flow-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+  margin-top: 8rpx;
+}
+
+.flow-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.flow-bar-label {
+  width: 80rpx;
+  color: var(--ink-2);
+  font-size: 26rpx;
+  font-weight: 600;
+}
+
+.flow-bar-track {
+  flex: 1;
+  height: 24rpx;
+  border-radius: 12rpx;
+  background: #F0F0F0;
+  overflow: hidden;
+}
+
+.flow-bar-fill {
+  height: 100%;
+  border-radius: 12rpx;
+  background: linear-gradient(90deg, var(--accent), var(--pink-soft));
+}
+
+.flow-bar-pct {
+  width: 80rpx;
+  text-align: right;
+  color: var(--muted);
+  font-size: 24rpx;
+  font-weight: 600;
+}
+
+/* ── Recent records ── */
+.recent-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8rpx;
+}
+
+.recent-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid var(--divider);
+}
+
+.recent-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.recent-dates {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.recent-range {
+  color: var(--ink);
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.recent-duration {
+  color: var(--muted);
+  font-size: 22rpx;
+}
+
+.recent-flow {
+  color: var(--accent);
+  font-size: 24rpx;
+  font-weight: 600;
+  padding: 6rpx 16rpx;
+  border-radius: 16rpx;
+  background: var(--accent-soft);
+}
+
+/* ── View all link ── */
+.view-all-wrap {
+  text-align: center;
+  padding: 16rpx 0 4rpx;
+  border-top: 1rpx solid var(--divider);
+  margin-top: 4rpx;
+}
+
+.view-all-link {
+  color: var(--accent);
+  font-size: 26rpx;
+  font-weight: 600;
+}
+
+/* ── Encouragement ── */
+.encourage-text {
+  display: block;
+  text-align: center;
+  color: var(--muted);
+  font-size: 24rpx;
+  margin-top: 16rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx solid var(--divider);
+}

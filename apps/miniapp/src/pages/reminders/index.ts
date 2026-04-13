@@ -210,7 +210,7 @@ Page({
 
   backToCalendar() {
     wx.switchTab({
-      url: "/pages/home/index"
+      url: "/pages/calendar/index"
     });
   }
 });

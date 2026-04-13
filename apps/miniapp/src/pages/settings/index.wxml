@@ -1,69 +1,93 @@
 <view class="screen settings-screen">
-  <view class="header">
-    <text class="header-title">{{copy.title}}</text>
-    <text class="header-subtle">{{copy.subtitle}}</text>
-  </view>
+  <text class="page-title">{{copy.title}}</text>
 
-  <!-- Cycle length stepper -->
-  <view class="stepper-card">
-    <view class="stepper-head">
-      <text class="stepper-label">{{copy.cycleLengthLabel}}</text>
-      <text class="stepper-value">{{cycleLength}} {{copy.dayUnit}}</text>
-    </view>
-    <view class="stepper-row">
-      <view class="stepper-btn" bindtap="decreaseCycle">
-        <text class="stepper-btn-label">-</text>
-      </view>
-      <view class="stepper-track">
-        <view class="stepper-fill" style="width: {{cycleFillPercent}}%;"></view>
-      </view>
-      <view class="stepper-btn" bindtap="increaseCycle">
-        <text class="stepper-btn-label">+</text>
+  <!-- Section: Cycle parameters -->
+  <text class="section-label">{{copy.cycleParamSection}}</text>
+  <view class="param-card">
+    <view class="param-row">
+      <text class="param-name">{{copy.cycleLengthLabel}}</text>
+      <view class="stepper">
+        <view class="stepper-btn" bindtap="decreaseCycle"><text class="stepper-icon">−</text></view>
+        <text class="stepper-num">{{cycleLength}}</text>
+        <view class="stepper-btn" bindtap="increaseCycle"><text class="stepper-icon">+</text></view>
       </view>
     </view>
-  </view>
-
-  <!-- Period length stepper -->
-  <view class="stepper-card">
-    <view class="stepper-head">
-      <text class="stepper-label">{{copy.periodLengthLabel}}</text>
-      <text class="stepper-value">{{periodLength}} {{copy.dayUnit}}</text>
-    </view>
-    <view class="stepper-row">
-      <view class="stepper-btn" bindtap="decreasePeriod">
-        <text class="stepper-btn-label">-</text>
-      </view>
-      <view class="stepper-track">
-        <view class="stepper-fill" style="width: {{periodFillPercent}}%;"></view>
-      </view>
-      <view class="stepper-btn" bindtap="increasePeriod">
-        <text class="stepper-btn-label">+</text>
+    <view class="param-divider"></view>
+    <view class="param-row">
+      <text class="param-name">{{copy.periodLengthLabel}}</text>
+      <view class="stepper">
+        <view class="stepper-btn" bindtap="decreasePeriod"><text class="stepper-icon">−</text></view>
+        <text class="stepper-num">{{periodLength}}</text>
+        <view class="stepper-btn" bindtap="increasePeriod"><text class="stepper-icon">+</text></view>
       </view>
     </view>
   </view>
 
-  <!-- Reminders card -->
-  <view class="card">
-    <view class="card-head">
-      <text class="card-title">{{copy.remindersTitle}}</text>
-      <view class="icon-btn" bindtap="openReminders">
-        <text class="icon-arrow">→</text>
+  <!-- Section: Reminders -->
+  <text class="section-label">{{copy.reminderSection}}</text>
+  <view class="reminder-card" wx:if="{{hasPreference}}">
+    <block wx:for="{{reminderViews}}" wx:key="type">
+      <view class="reminder-row">
+        <view class="reminder-left">
+          <text class="reminder-name">{{item.label}}</text>
+          <text class="reminder-detail" wx:if="{{item.enabled}}">{{item.detail}}</text>
+        </view>
+        <switch
+          class="reminder-switch"
+          checked="{{item.enabled}}"
+          color="#FF4D6A"
+          data-type="{{item.type}}"
+          bindchange="toggleItem"
+        />
+      </view>
+      <!-- Lead days: sub-option of period_due -->
+      <view class="lead-days-row" wx:if="{{item.type === 'period_due' && item.enabled}}">
+        <text class="lead-days-label">{{copy.leadDaysLabel}}</text>
+        <view class="chip-row">
+          <view
+            class="day-chip {{leadDays === 1 ? 'day-chip-active' : ''}}"
+            data-days="1"
+            bindtap="setLeadDays"
+          >1{{copy.dayBefore}}</view>
+          <view
+            class="day-chip {{leadDays === 2 ? 'day-chip-active' : ''}}"
+            data-days="2"
+            bindtap="setLeadDays"
+          >2{{copy.dayBefore}}</view>
+          <view
+            class="day-chip {{leadDays === 3 ? 'day-chip-active' : ''}}"
+            data-days="3"
+            bindtap="setLeadDays"
+          >3{{copy.dayBefore}}</view>
+        </view>
+      </view>
+    </block>
+
+    <view class="reminder-divider"></view>
+
+    <!-- Quiet hours -->
+    <view class="quiet-row">
+      <text class="reminder-name">{{copy.quietHoursLabel}}</text>
+      <view class="quiet-times">
+        <picker mode="time" value="{{quietStart}}" bindchange="changeQuietStart">
+          <text class="quiet-time">{{quietStart}}</text>
+        </picker>
+        <text class="quiet-sep">-</text>
+        <picker mode="time" value="{{quietEnd}}" bindchange="changeQuietEnd">
+          <text class="quiet-time">{{quietEnd}}</text>
+        </picker>
       </view>
     </view>
-    <text class="card-body">{{reminderSummary}}</text>
   </view>
 
-  <!-- Privacy card -->
-  <view class="card">
-    <text class="card-title">{{copy.privacyTitle}}</text>
-    <text class="card-body">{{copy.privacyBody}}</text>
-    <view class="action-row">
-      <button class="action-btn" bindtap="exportData">
-        {{copy.exportLabel}}
-      </button>
-      <button class="action-btn delete-action-btn" bindtap="deleteAccount">
-        {{copy.deleteLabel}}
-      </button>
-    </view>
+  <!-- Section: Privacy & data -->
+  <text class="section-label">{{copy.privacySection}}</text>
+  <view class="privacy-card">
+    <text class="privacy-body">{{copy.privacyBody}}</text>
+    <button class="export-btn" bindtap="exportData">{{copy.exportLabel}}</button>
+  </view>
+
+  <view class="delete-link-wrap" bindtap="deleteAccount">
+    <text class="delete-link">{{copy.deleteLabel}}</text>
   </view>
 </view>

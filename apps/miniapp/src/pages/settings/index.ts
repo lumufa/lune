@@ -1,12 +1,9 @@
-import type { ReminderPreferenceItem } from "@women-period/shared";
+import type { ReminderPreferenceItem, ReminderType } from "@women-period/shared";
 import type { ReminderPreferenceResponse } from "../../types";
 import { api, isApiNetworkError } from "../../services/api";
 import {
-  getDisplayLanguageToggleLabel,
-  getNextDisplayLanguage,
   getReminderTypeLabel,
   getStoredDisplayLanguage,
-  setStoredDisplayLanguage,
   type DisplayLanguage
 } from "../../utils/i18n";
 
@@ -18,14 +15,15 @@ const PERIOD_MIN = 2;
 const PERIOD_MAX = 10;
 
 interface SettingsCopy {
-  languageButtonLabel: string;
   title: string;
-  subtitle: string;
+  cycleParamSection: string;
   cycleLengthLabel: string;
   periodLengthLabel: string;
-  dayUnit: string;
-  remindersTitle: string;
-  privacyTitle: string;
+  reminderSection: string;
+  leadDaysLabel: string;
+  dayBefore: string;
+  quietHoursLabel: string;
+  privacySection: string;
   privacyBody: string;
   exportLabel: string;
   deleteLabel: string;
@@ -39,34 +37,52 @@ interface SettingsCopy {
 
 function buildCopy(language: DisplayLanguage): SettingsCopy {
   return {
-    languageButtonLabel: getDisplayLanguageToggleLabel(language),
     title: language === "en" ? "Settings" : "设置",
-    subtitle:
-      language === "en"
-        ? "Keep preferences, reminders, and privacy in one place."
-        : "把周期参数、提醒和隐私放在一个地方。",
-    cycleLengthLabel: language === "en" ? "Average cycle length" : "平均周期长度",
-    periodLengthLabel: language === "en" ? "Average period length" : "平均经期长度",
-    dayUnit: language === "en" ? "days" : "天",
-    remindersTitle: language === "en" ? "Reminders & quiet hours" : "提醒和免打扰",
-    privacyTitle: language === "en" ? "Privacy & data" : "隐私与数据",
+    cycleParamSection: language === "en" ? "CYCLE PARAMETERS" : "周期参数",
+    cycleLengthLabel: language === "en" ? "Cycle length" : "周期长度",
+    periodLengthLabel: language === "en" ? "Period length" : "经期长度",
+    reminderSection: language === "en" ? "REMINDERS" : "提醒",
+    leadDaysLabel: language === "en" ? "Remind in advance" : "提前提醒",
+    dayBefore: language === "en" ? "d" : "天前",
+    quietHoursLabel: language === "en" ? "Quiet hours" : "免打扰时段",
+    privacySection: language === "en" ? "PRIVACY & DATA" : "隐私与数据",
     privacyBody:
       language === "en"
-        ? "Your data stays under the current account and can be exported or deleted."
-        : "数据仅在当前账号下维护，可随时导出或删除。",
+        ? "Your data stays under the current account."
+        : "数据仅在当前账号下维护。",
     exportLabel: language === "en" ? "Export data" : "导出数据",
-    deleteLabel: language === "en" ? "Delete account" : "删除账号",
+    deleteLabel: language === "en" ? "Delete all data" : "删除所有数据",
     networkError: language === "en" ? "API offline" : "接口未连接",
     exportFailed: language === "en" ? "Export failed" : "导出失败",
     deleteFailed: language === "en" ? "Delete failed" : "删除失败",
-    deleteConfirmTitle: language === "en" ? "Delete account" : "删除账号",
-    deleteConfirmContent: language === "en" ? "This clears all current user data." : "这会清除当前用户的全部数据。",
+    deleteConfirmTitle: language === "en" ? "Delete all data" : "删除所有数据",
+    deleteConfirmContent:
+      language === "en"
+        ? "This action cannot be undone. All records will be permanently removed."
+        : "此操作不可撤销，所有记录将被永久清除。",
     deleted: language === "en" ? "Deleted" : "已删除"
   };
 }
 
-function clampProgress(value: number, min: number, max: number): number {
-  return Math.min(Math.max(((value - min) / (max - min)) * 100, 8), 100);
+interface ReminderItemView {
+  type: ReminderType;
+  label: string;
+  detail: string;
+  enabled: boolean;
+}
+
+function buildReminderDetail(item: ReminderPreferenceItem, language: DisplayLanguage): string {
+  if (language === "en") return `${item.leadDays}d ahead · ${item.time}`;
+  return `提前${item.leadDays}天 · ${item.time}`;
+}
+
+function buildReminderViews(items: ReminderPreferenceItem[], language: DisplayLanguage): ReminderItemView[] {
+  return items.map((item) => ({
+    type: item.type,
+    enabled: item.enabled,
+    label: getReminderTypeLabel(item.type, language),
+    detail: buildReminderDetail(item, language)
+  }));
 }
 
 function getStoredCycleLength(): number {
@@ -74,9 +90,7 @@ function getStoredCycleLength(): number {
     const stored = wx.getStorageSync(CYCLE_LENGTH_KEY);
     const value = Number(stored);
     return value >= CYCLE_MIN && value <= CYCLE_MAX ? value : 28;
-  } catch {
-    return 28;
-  }
+  } catch { return 28; }
 }
 
 function getStoredPeriodLength(): number {
@@ -84,21 +98,15 @@ function getStoredPeriodLength(): number {
     const stored = wx.getStorageSync(PERIOD_LENGTH_KEY);
     const value = Number(stored);
     return value >= PERIOD_MIN && value <= PERIOD_MAX ? value : 5;
-  } catch {
-    return 5;
-  }
+  } catch { return 5; }
 }
 
 function saveCycleLength(value: number): void {
-  try {
-    wx.setStorageSync(CYCLE_LENGTH_KEY, value);
-  } catch { /* ignore */ }
+  try { wx.setStorageSync(CYCLE_LENGTH_KEY, value); } catch { /* ignore */ }
 }
 
 function savePeriodLength(value: number): void {
-  try {
-    wx.setStorageSync(PERIOD_LENGTH_KEY, value);
-  } catch { /* ignore */ }
+  try { wx.setStorageSync(PERIOD_LENGTH_KEY, value); } catch { /* ignore */ }
 }
 
 Page({
@@ -107,14 +115,13 @@ Page({
     copy: buildCopy(getStoredDisplayLanguage()),
     cycleLength: getStoredCycleLength(),
     periodLength: getStoredPeriodLength(),
-    cycleFillPercent: 0,
-    periodFillPercent: 0,
-    reminderSummary: "",
-    preference: null as ReminderPreferenceResponse | null
-  },
-
-  onLoad() {
-    this.updateFills();
+    preference: null as ReminderPreferenceResponse | null,
+    hasPreference: false,
+    reminderViews: [] as ReminderItemView[],
+    anyReminderEnabled: false,
+    leadDays: 2,
+    quietStart: "22:00",
+    quietEnd: "08:00"
   },
 
   onShow() {
@@ -128,48 +135,35 @@ Page({
 
   applyLanguage(language: DisplayLanguage) {
     this.setData({ language, copy: buildCopy(language) });
-    this.updateReminderSummary();
-  },
-
-  toggleLanguage() {
-    const nextLanguage = getNextDisplayLanguage(this.data.language as DisplayLanguage);
-    setStoredDisplayLanguage(nextLanguage);
-    this.applyLanguage(nextLanguage);
-  },
-
-  updateFills() {
-    this.setData({
-      cycleFillPercent: clampProgress(this.data.cycleLength, CYCLE_MIN, CYCLE_MAX),
-      periodFillPercent: clampProgress(this.data.periodLength, PERIOD_MIN, PERIOD_MAX)
-    });
+    if (this.data.preference) {
+      this.setData({
+        reminderViews: buildReminderViews(this.data.preference.items, language)
+      });
+    }
   },
 
   decreaseCycle() {
     const next = Math.max(CYCLE_MIN, this.data.cycleLength - 1);
     this.setData({ cycleLength: next });
     saveCycleLength(next);
-    this.updateFills();
   },
 
   increaseCycle() {
     const next = Math.min(CYCLE_MAX, this.data.cycleLength + 1);
     this.setData({ cycleLength: next });
     saveCycleLength(next);
-    this.updateFills();
   },
 
   decreasePeriod() {
     const next = Math.max(PERIOD_MIN, this.data.periodLength - 1);
     this.setData({ periodLength: next });
     savePeriodLength(next);
-    this.updateFills();
   },
 
   increasePeriod() {
     const next = Math.min(PERIOD_MAX, this.data.periodLength + 1);
     this.setData({ periodLength: next });
     savePeriodLength(next);
-    this.updateFills();
   },
 
   async loadDashboardSync() {
@@ -182,7 +176,6 @@ Page({
         this.setData({ cycleLength, periodLength });
         saveCycleLength(cycleLength);
         savePeriodLength(periodLength);
-        this.updateFills();
       }
     } catch { /* silent */ }
   },
@@ -190,32 +183,83 @@ Page({
   async loadPreference() {
     try {
       const preference = await api.getReminderPreferences();
-      this.setData({ preference });
-      this.updateReminderSummary();
+      const language = this.data.language as DisplayLanguage;
+      const periodDue = preference.items.find((i: ReminderPreferenceItem) => i.type === "period_due");
+      const anyEnabled = preference.items.some((i: ReminderPreferenceItem) => i.enabled);
+      this.setData({
+        preference,
+        hasPreference: true,
+        reminderViews: buildReminderViews(preference.items, language),
+        anyReminderEnabled: anyEnabled,
+        leadDays: periodDue?.leadDays ?? 2,
+        quietStart: preference.quietHours.start,
+        quietEnd: preference.quietHours.end
+      });
     } catch { /* silent */ }
   },
 
-  updateReminderSummary() {
-    const preference = this.data.preference;
+  toggleItem(event: WechatMiniprogram.CustomEvent<{ value: boolean }>) {
+    const type = event.currentTarget.dataset.type as string;
+    const enabled = Boolean(event.detail.value);
+    if (!this.data.preference) return;
+
+    const nextItems = this.data.preference.items.map((item: ReminderPreferenceItem) =>
+      item.type === type ? { ...item, enabled } : item
+    );
     const language = this.data.language as DisplayLanguage;
-    if (!preference) {
-      this.setData({ reminderSummary: "" });
-      return;
-    }
+    const anyEnabled = nextItems.some((i: ReminderPreferenceItem) => i.enabled);
+    const nextPref = { ...this.data.preference, items: nextItems };
 
-    const enabledCount = preference.items.filter((item: ReminderPreferenceItem) => item.enabled).length;
-    const quietHours = `${preference.quietHours.start} - ${preference.quietHours.end}`;
-
-    const summary =
-      language === "en"
-        ? `${enabledCount} reminders enabled, quiet hours ${quietHours}`
-        : `已开启 ${enabledCount} 项提醒，免打扰时段 ${quietHours}`;
-
-    this.setData({ reminderSummary: summary });
+    this.setData({
+      preference: nextPref,
+      reminderViews: buildReminderViews(nextItems, language),
+      anyReminderEnabled: anyEnabled
+    });
+    void this.autoSavePreference(nextPref);
   },
 
-  openReminders() {
-    wx.navigateTo({ url: "/pages/reminders/index" });
+  setLeadDays(event: WechatMiniprogram.BaseEvent) {
+    const days = Number(event.currentTarget.dataset.days);
+    if (!this.data.preference) return;
+
+    const nextItems = this.data.preference.items.map((item: ReminderPreferenceItem) =>
+      item.type === "period_due" ? { ...item, leadDays: days } : item
+    );
+    const language = this.data.language as DisplayLanguage;
+    const nextPref = { ...this.data.preference, items: nextItems };
+
+    this.setData({
+      leadDays: days,
+      preference: nextPref,
+      reminderViews: buildReminderViews(nextItems, language)
+    });
+    void this.autoSavePreference(nextPref);
+  },
+
+  changeQuietStart(event: WechatMiniprogram.CustomEvent<{ value: string }>) {
+    if (!this.data.preference) return;
+    const nextPref = {
+      ...this.data.preference,
+      quietHours: { ...this.data.preference.quietHours, start: event.detail.value }
+    };
+    this.setData({ quietStart: event.detail.value, preference: nextPref });
+    void this.autoSavePreference(nextPref);
+  },
+
+  changeQuietEnd(event: WechatMiniprogram.CustomEvent<{ value: string }>) {
+    if (!this.data.preference) return;
+    const nextPref = {
+      ...this.data.preference,
+      quietHours: { ...this.data.preference.quietHours, end: event.detail.value }
+    };
+    this.setData({ quietEnd: event.detail.value, preference: nextPref });
+    void this.autoSavePreference(nextPref);
+  },
+
+  async autoSavePreference(pref: ReminderPreferenceResponse) {
+    try {
+      await api.updateReminderPreferences(pref);
+    } catch { /* silent auto-save */ }
   },
 
   async exportData() {
@@ -240,22 +284,17 @@ Page({
       wx.showModal({
         title: this.data.copy.deleteConfirmTitle,
         content: this.data.copy.deleteConfirmContent,
-        confirmColor: "#FF5B8D",
+        confirmColor: "#E53E3E",
         success: (result) => resolve(Boolean(result.confirm)),
         fail: () => resolve(false)
       });
     });
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     try {
       await api.deleteAccount();
-      wx.showToast({
-        title: this.data.copy.deleted,
-        icon: "success"
-      });
+      wx.showToast({ title: this.data.copy.deleted, icon: "success" });
     } catch (error) {
       wx.showToast({
         title: isApiNetworkError(error) ? this.data.copy.networkError : this.data.copy.deleteFailed,

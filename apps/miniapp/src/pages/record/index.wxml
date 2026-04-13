@@ -1,107 +1,99 @@
-<view class="screen">
-  <view class="header">
-    <text class="header-title">{{isEditMode ? copy.heroEyebrowEdit : copy.heroEyebrowCreate}}</text>
-    <text class="header-subtle">{{isEditMode ? copy.heroSubtitleEdit : copy.heroSubtitleCreate}}</text>
-  </view>
+<view class="screen record-screen">
+  <text class="page-title">{{isEditMode ? copy.titleEdit : copy.titleCreate}}</text>
 
-  <view class="record-card stack form-stack">
-    <text class="card-title">{{copy.startAtLabel}}</text>
-    <view class="datetime-row">
-      <view class="date-field">
-        <text class="field-label">{{copy.startLabel}}</text>
-        <picker class="datetime-picker" mode="date" value="{{startDatePart}}" bindchange="changeStartDatePart">
-          <view class="picker-field">{{startDatePart}}</view>
-        </picker>
-      </view>
-      <view class="date-field">
-        <text class="field-label">{{copy.endLabel}}</text>
-        <picker class="datetime-picker" mode="date" value="{{endDatePart}}" bindchange="changeEndDatePart">
-          <view class="picker-field">{{endDatePart}}</view>
-        </picker>
-      </view>
+  <!-- Date card: compact one-line -->
+  <view class="rec-card">
+    <text class="card-label">{{copy.dateLabel}}</text>
+    <view class="date-inline">
+      <picker mode="date" value="{{startDatePart}}" bindchange="changeStartDatePart">
+        <text class="date-val">{{startDatePart}}</text>
+      </picker>
+      <text class="date-arrow">→</text>
+      <picker mode="date" value="{{endDatePart}}" bindchange="changeEndDatePart">
+        <text class="date-val">{{endDatePart}}</text>
+      </picker>
     </view>
   </view>
 
-  <view class="record-card stack form-stack">
-    <text class="card-title">{{copy.flowLabel}}</text>
-    <view class="flow-grid">
+  <!-- Body card: flow + pain -->
+  <view class="rec-card">
+    <text class="card-label">{{copy.bodyLabel}}</text>
+
+    <text class="sub-label">{{copy.flowLabel}}</text>
+    <view class="chip-row">
       <view
-        class="choice-chip flow-chip {{flowLevel === item.value ? 'choice-chip-active' : ''}}"
+        class="chip {{flowLevel === item.value ? 'chip-active' : ''}}"
         wx:for="{{flowItems}}"
         wx:key="value"
         data-value="{{item.value}}"
         bindtap="selectFlow"
-      >
-        {{item.label}}
-      </view>
+      >{{item.label}}</view>
     </view>
-  </view>
 
-  <view class="record-card stack form-stack">
-    <text class="card-title">{{copy.painLabel}}</text>
-    <view class="flow-grid">
+    <text class="sub-label mt16">{{copy.painLabel}}</text>
+    <view class="chip-row">
       <view
-        class="choice-chip flow-chip {{painLevel === item.value ? 'choice-chip-active' : ''}}"
+        class="pain-chip {{painLevel === item.value ? 'pain-chip-active' : ''}}"
         wx:for="{{painItems}}"
         wx:key="value"
         data-value="{{item.value}}"
         bindtap="selectPain"
       >
-        {{item.label}}
+        <text class="pain-num">{{item.label}}</text>
+        <text class="pain-hint">{{item.hint}}</text>
       </view>
     </view>
-    <text class="pain-description">{{painDescription}}</text>
+    <text class="pain-desc" wx:if="{{painDescription}}">{{painDescription}}</text>
   </view>
 
-  <view class="record-card stack form-stack">
-    <view class="card-head">
-      <text class="card-title">{{copy.symptomsLabel}}</text>
-      <text class="card-meta">{{selectedSymptomCount}} {{copy.selectedUnit}}</text>
-    </view>
-    <view class="symptom-grid">
+  <!-- Feeling card: symptoms + mood -->
+  <view class="rec-card">
+    <text class="card-label">{{copy.feelingLabel}}</text>
+
+    <text class="sub-label">{{copy.symptomsLabel}}</text>
+    <view class="tag-wrap">
       <view
-        class="symptom-item {{selectedSymptoms.indexOf(item.value) > -1 ? 'symptom-item-active' : ''}}"
+        class="tag {{item.selected ? 'tag-active' : ''}}"
         wx:for="{{symptomItems}}"
         wx:key="value"
         data-value="{{item.value}}"
         bindtap="toggleSymptom"
-      >
-        <text class="symptom-label {{selectedSymptoms.indexOf(item.value) > -1 ? 'symptom-label-active' : ''}}">{{item.label}}</text>
-      </view>
+      >{{item.label}}</view>
     </view>
-  </view>
 
-  <view class="record-card stack form-stack">
-    <text class="card-title">{{copy.moodLabel}}</text>
-    <view class="mood-wrap">
+    <text class="sub-label mt16">{{copy.moodLabel}}</text>
+    <view class="tag-wrap">
       <view
-        class="mood-chip {{mood === item.value ? 'mood-chip-active' : ''}}"
+        class="tag {{mood === item.value ? 'tag-active' : ''}}"
         wx:for="{{moodItems}}"
         wx:key="value"
         data-value="{{item.value}}"
         bindtap="selectMood"
-      >
-        <text class="mood-label {{mood === item.value ? 'mood-label-active' : ''}}">{{item.label}}</text>
-      </view>
+      >{{item.label}}</view>
     </view>
   </view>
 
-  <view class="record-card stack form-stack">
-    <text class="card-title">{{copy.noteLabel}}</text>
+  <!-- Notes card -->
+  <view class="rec-card">
+    <text class="card-label">{{copy.noteLabel}}</text>
     <textarea
       class="textarea"
       maxlength="200"
       placeholder="{{copy.notePlaceholder}}"
-      placeholder-style="color: #A0A2AC;"
+      placeholder-style="color: #B0B1BB;"
       bindinput="changeNote"
       value="{{note}}"
     />
   </view>
 
-  <button class="save-btn" loading="{{isSubmitting}}" bindtap="submitRecord">
-    {{isEditMode ? copy.saveEditLabel : copy.saveCreateLabel}}
-  </button>
-  <button class="danger-btn delete-btn" loading="{{isSubmitting}}" bindtap="deleteCurrentRecord" wx:if="{{isEditMode}}">
-    {{copy.deleteLabel}}
-  </button>
+  <!-- Bottom spacer for fixed button -->
+  <view class="btn-spacer"></view>
+</view>
+
+<!-- Fixed save button -->
+<view class="fixed-btn-wrap">
+  <button class="save-btn" loading="{{isSubmitting}}" bindtap="submitRecord">{{copy.saveLabel}}</button>
+  <view class="delete-link-wrap" wx:if="{{isEditMode}}" bindtap="deleteCurrentRecord">
+    <text class="delete-link">{{copy.deleteLabel}}</text>
+  </view>
 </view>

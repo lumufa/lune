@@ -1,0 +1,63 @@
+<view class="screen trends-screen">
+  <text class="page-title">{{copy.title}}<text class="record-count" wx:if="{{hasData}}"> · {{totalRecords}} {{copy.itemUnit}}</text></text>
+
+  <!-- Empty state -->
+  <view class="empty-card" wx:if="{{!hasData}}">
+    <text class="empty-title">{{copy.noData}}</text>
+    <text class="empty-hint">{{copy.noDataHint}}</text>
+  </view>
+
+  <!-- Insufficient data guidance -->
+  <view class="guidance-card" wx:if="{{hasData && !hasSufficientData}}">
+    <view class="guidance-progress">
+      <view class="guidance-fill" style="width: {{guidancePercent}}%;"></view>
+    </view>
+    <text class="guidance-text">{{copy.guidanceText}}</text>
+  </view>
+
+  <!-- Stats row (only when sufficient data) -->
+  <view class="stats-row" wx:if="{{hasSufficientData}}">
+    <view class="stat-card">
+      <text class="stat-value">{{avgCycle}}</text>
+      <text class="stat-unit">{{copy.dayUnit}}</text>
+      <text class="stat-label">{{copy.avgCycleLabel}}</text>
+    </view>
+    <view class="stat-card">
+      <text class="stat-value">{{avgPeriod}}</text>
+      <text class="stat-unit">{{copy.dayUnit}}</text>
+      <text class="stat-label">{{copy.avgPeriodLabel}}</text>
+    </view>
+  </view>
+
+  <!-- Flow distribution -->
+  <view class="card" wx:if="{{hasData}}">
+    <text class="section-title">{{copy.flowDistTitle}}</text>
+    <view class="flow-bars">
+      <view class="flow-bar-row" wx:for="{{flowDist}}" wx:key="label">
+        <text class="flow-bar-label">{{item.label}}</text>
+        <view class="flow-bar-track">
+          <view class="flow-bar-fill" style="width: {{item.percent}}%;" wx:if="{{item.percent > 0}}"></view>
+        </view>
+        <text class="flow-bar-pct">{{item.percent}}%</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- Recent records -->
+  <view class="card" wx:if="{{hasData && recentList.length > 0}}">
+    <text class="section-title">{{copy.recentTitle}}</text>
+    <view class="recent-list">
+      <view class="recent-item" wx:for="{{recentList}}" wx:key="id">
+        <view class="recent-dates">
+          <text class="recent-range">{{item.startDate}} → {{item.endDate}}</text>
+          <text class="recent-duration">{{item.durationDays}} {{copy.dayUnit}}</text>
+        </view>
+        <text class="recent-flow">{{item.flowLabel}}</text>
+      </view>
+    </view>
+    <view class="view-all-wrap" wx:if="{{showViewAll}}" bindtap="viewAllRecent">
+      <text class="view-all-link">{{copy.viewAllPrefix}}{{totalRecords}}{{copy.viewAllSuffix}}</text>
+    </view>
+    <text class="encourage-text" wx:if="{{!hasSufficientData}}">{{copy.encourageText}}</text>
+  </view>
+</view>

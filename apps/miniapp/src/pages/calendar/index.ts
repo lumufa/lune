@@ -1,18 +1,21 @@
 import type { CycleRecord } from "@women-period/shared";
 import type { DashboardResponse } from "../../types";
 import { api, isApiNetworkError } from "../../services/api";
+import { todayIso } from "../../utils/date";
 import {
-  getDisplayLanguageToggleLabel,
-  getNextDisplayLanguage,
   getStoredDisplayLanguage,
-  setStoredDisplayLanguage,
   type DisplayLanguage
 } from "../../utils/i18n";
 
 interface CalendarCopy {
-  languageButtonLabel: string;
-  tapDateHint: string;
-  legendTitle: string;
+  cycleDayLabel: string;
+  dayUnit: string;
+  untilNextPeriod: string;
+  periodLate: string;
+  predictedShort: string;
+  waitingFirstRecord: string;
+  logToday: string;
+  editTodayLog: string;
   legendPeriod: string;
   legendPredicted: string;
   legendSymptom: string;
@@ -34,12 +37,17 @@ interface CalendarDay {
 
 function buildCopy(language: DisplayLanguage): CalendarCopy {
   return {
-    languageButtonLabel: getDisplayLanguageToggleLabel(language),
-    tapDateHint: language === "en" ? "Tap a date to log quickly" : "点击日期可快速记录",
-    legendTitle: language === "en" ? "Legend" : "图例",
+    cycleDayLabel: language === "en" ? "Day " : "第",
+    dayUnit: language === "en" ? "d" : "天",
+    untilNextPeriod: language === "en" ? " · next in " : " · 距下次",
+    periodLate: language === "en" ? "Period is late" : "月经迟到了",
+    predictedShort: language === "en" ? "Est. " : "预计 ",
+    waitingFirstRecord: language === "en" ? "Tap below to start logging" : "点击下方开始记录",
+    logToday: language === "en" ? "Log" : "记录",
+    editTodayLog: language === "en" ? "Log" : "记录",
     legendPeriod: language === "en" ? "Period" : "经期",
     legendPredicted: language === "en" ? "Predicted" : "预测期",
-    legendSymptom: language === "en" ? "Symptoms" : "症状记录",
+    legendSymptom: language === "en" ? "Symptoms" : "症状",
     networkError: language === "en" ? "API offline" : "接口未连接",
     loadFailed: language === "en" ? "Load failed" : "加载失败"
   };
@@ -58,6 +66,17 @@ function formatDateKey(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function formatPredictionDate(value: string | undefined, language: DisplayLanguage): string {
+  if (!value) return language === "en" ? "N/A" : "暂无";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return language === "en" ? "N/A" : "暂无";
+  return new Intl.DateTimeFormat(language === "en" ? "en-US" : "zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(date);
 }
 
 function buildPeriodDayMap(records: CycleRecord[]): Map<string, CycleRecord> {
@@ -82,15 +101,9 @@ function isPredictedDay(
   cycleLength: number,
   periodLength: number
 ): boolean {
-  if (!lastPeriodStart || cycleLength <= 0 || periodLength <= 0) {
-    return false;
-  }
-  const diff = Math.round(
-    (date.getTime() - lastPeriodStart.getTime()) / (1000 * 60 * 60 * 24)
-  );
-  if (diff <= 0) {
-    return false;
-  }
+  if (!lastPeriodStart || cycleLength <= 0 || periodLength <= 0) return false;
+  const diff = Math.round((date.getTime() - lastPeriodStart.getTime()) / (1000 * 60 * 60 * 24));
+  if (diff <= 0) return false;
   const dayInCycle = ((diff % cycleLength) + cycleLength) % cycleLength;
   return dayInCycle < periodLength;
 }
@@ -111,15 +124,8 @@ function buildCalendarDays(
 
   for (let i = 0; i < startPadding; i++) {
     days.push({
-      key: `empty-${i}`,
-      day: 0,
-      dateKey: "",
-      isEmpty: true,
-      isToday: false,
-      isPeriod: false,
-      isPredicted: false,
-      hasSymptoms: false,
-      recordId: ""
+      key: `empty-${i}`, day: 0, dateKey: "", isEmpty: true,
+      isToday: false, isPeriod: false, isPredicted: false, hasSymptoms: false, recordId: ""
     });
   }
 
@@ -129,31 +135,54 @@ function buildCalendarDays(
     const record = periodMap.get(dateKey);
     const isToday = dateKey === todayKey;
     const isPeriod = Boolean(record);
-    const isPredicted =
-      !isPeriod && isPredictedDay(date, lastPeriodStart, cycleLength, periodLength);
-    const hasSymptoms = Boolean(
-      record?.symptoms?.length && record.symptoms[0] !== "none"
-    );
+    const isPredicted = !isPeriod && isPredictedDay(date, lastPeriodStart, cycleLength, periodLength);
+    const hasSymptoms = Boolean(record?.symptoms?.length && record.symptoms[0] !== "none");
 
     days.push({
-      key: dateKey,
-      day: d,
-      dateKey,
-      isEmpty: false,
-      isToday,
-      isPeriod,
-      isPredicted,
-      hasSymptoms,
-      recordId: record?.id ?? ""
+      key: dateKey, day: d, dateKey, isEmpty: false,
+      isToday, isPeriod, isPredicted, hasSymptoms, recordId: record?.id ?? ""
     });
   }
 
   return days;
 }
 
+function buildCycleInfo(records: CycleRecord[], cycleLength: number) {
+  if (!records.length) {
+    return { currentCycleDay: 0, nextPeriodDate: null, daysUntilNext: 0, isLate: false };
+  }
+  const sorted = records.slice().sort((a, b) => b.startDate.localeCompare(a.startDate));
+  const lastRecord = sorted[0];
+  const lastStart = new Date(lastRecord.startDate);
+  const today = new Date();
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const lastStartDay = new Date(lastStart.getFullYear(), lastStart.getMonth(), lastStart.getDate());
+  const daysSinceLast = Math.round((todayStart.getTime() - lastStartDay.getTime()) / (1000 * 60 * 60 * 24));
+  const currentCycleDay = daysSinceLast + 1;
+  const daysUntilNext = cycleLength - daysSinceLast;
+  const nextPeriodDate = new Date(lastStartDay.getTime() + cycleLength * 24 * 60 * 60 * 1000);
+  const isLate = daysUntilNext < 0;
+
+  return {
+    currentCycleDay: Math.max(1, currentCycleDay),
+    nextPeriodDate,
+    daysUntilNext: Math.abs(daysUntilNext),
+    isLate
+  };
+}
+
+function findTodayRecord(records: CycleRecord[]): string | undefined {
+  const today = todayIso();
+  for (const record of records) {
+    const startDate = record.startDate.slice(0, 10);
+    const endDate = record.endDate.slice(0, 10);
+    if (startDate <= today && endDate >= today) return record.id;
+  }
+  return undefined;
+}
+
 const WEEK_DAYS_ZH = ["日", "一", "二", "三", "四", "五", "六"];
 const WEEK_DAYS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
 const DEFAULT_CYCLE_LENGTH = 28;
 const DEFAULT_PERIOD_LENGTH = 5;
 
@@ -166,7 +195,15 @@ Page({
     currentMonth: new Date().getMonth(),
     monthLabel: "",
     calendarDays: [] as CalendarDay[],
-    dashboard: null as DashboardResponse | null
+    dashboard: null as DashboardResponse | null,
+    cycleDay: 0,
+    cycleProgress: 0,
+    hasRecords: false,
+    hasNextPeriod: false,
+    daysUntilNext: 0,
+    isLate: false,
+    predictedDate: "",
+    todayRecordId: ""
   },
 
   onLoad() {
@@ -189,14 +226,8 @@ Page({
     });
     this.updateMonthLabel();
     if (this.data.dashboard) {
-      this.buildCalendar(this.data.dashboard);
+      this.buildAll(this.data.dashboard, language);
     }
-  },
-
-  toggleLanguage() {
-    const nextLanguage = getNextDisplayLanguage(this.data.language as DisplayLanguage);
-    setStoredDisplayLanguage(nextLanguage);
-    this.applyLanguage(nextLanguage);
   },
 
   updateMonthLabel() {
@@ -212,42 +243,59 @@ Page({
   prevMonth() {
     let year = this.data.currentYear;
     let month = this.data.currentMonth - 1;
-    if (month < 0) {
-      month = 11;
-      year -= 1;
-    }
+    if (month < 0) { month = 11; year -= 1; }
     this.setData({ currentYear: year, currentMonth: month });
     this.updateMonthLabel();
-    if (this.data.dashboard) {
-      this.buildCalendar(this.data.dashboard);
-    }
+    if (this.data.dashboard) this.buildCalendar(this.data.dashboard);
   },
 
   nextMonth() {
     let year = this.data.currentYear;
     let month = this.data.currentMonth + 1;
-    if (month > 11) {
-      month = 0;
-      year += 1;
-    }
+    if (month > 11) { month = 0; year += 1; }
     this.setData({ currentYear: year, currentMonth: month });
     this.updateMonthLabel();
-    if (this.data.dashboard) {
-      this.buildCalendar(this.data.dashboard);
-    }
+    if (this.data.dashboard) this.buildCalendar(this.data.dashboard);
   },
 
   async loadDashboard() {
     try {
       const dashboard = await api.getDashboard();
       this.setData({ dashboard });
-      this.buildCalendar(dashboard);
+      this.buildAll(dashboard, this.data.language as DisplayLanguage);
     } catch (error) {
       wx.showToast({
         title: isApiNetworkError(error) ? this.data.copy.networkError : this.data.copy.loadFailed,
         icon: "none"
       });
     }
+  },
+
+  buildAll(dashboard: DashboardResponse, language: DisplayLanguage) {
+    const records = dashboard.records ?? [];
+    const summary = dashboard.summary;
+    const cycleLength = summary?.averageCycleLength || DEFAULT_CYCLE_LENGTH;
+    const cycleInfo = buildCycleInfo(records, cycleLength);
+    const todayRecordId = findTodayRecord(records) ?? "";
+
+    const progress = cycleLength > 0
+      ? Math.min(Math.round((cycleInfo.currentCycleDay / cycleLength) * 100), 100)
+      : 0;
+
+    this.setData({
+      cycleDay: cycleInfo.currentCycleDay,
+      cycleProgress: progress,
+      hasRecords: records.length > 0,
+      hasNextPeriod: Boolean(cycleInfo.nextPeriodDate && records.length > 0),
+      daysUntilNext: cycleInfo.daysUntilNext,
+      isLate: cycleInfo.isLate,
+      predictedDate: cycleInfo.nextPeriodDate
+        ? formatPredictionDate(cycleInfo.nextPeriodDate.toISOString(), language)
+        : "",
+      todayRecordId
+    });
+
+    this.buildCalendar(dashboard);
   },
 
   buildCalendar(dashboard: DashboardResponse) {
@@ -279,16 +327,23 @@ Page({
     this.setData({ calendarDays });
   },
 
+  openLog() {
+    const todayRecordId = this.data.todayRecordId;
+    if (todayRecordId) {
+      wx.navigateTo({ url: `/pages/record/index?id=${encodeURIComponent(todayRecordId)}` });
+    } else {
+      wx.navigateTo({ url: "/pages/record/index" });
+    }
+  },
+
   openDate(event: WechatMiniprogram.BaseEvent) {
     const dateKey = event.currentTarget.dataset.dateKey as string | undefined;
     const recordId = event.currentTarget.dataset.recordId as string | undefined;
-    if (!dateKey) {
-      return;
-    }
-    const app = getApp<IAppOption>();
+    if (!dateKey) return;
     if (recordId) {
-      app.editRecordId = recordId;
+      wx.navigateTo({ url: `/pages/record/index?id=${encodeURIComponent(recordId)}` });
+    } else {
+      wx.navigateTo({ url: "/pages/record/index" });
     }
-    wx.switchTab({ url: "/pages/record/index" });
   }
 });
