@@ -1,0 +1,25 @@
+{
+  "name": "@women-period/design-tokens",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Canonical Lune design tokens shared across miniapp, mobile, and harmony clients.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "tokens.json"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "emit:harmony": "node scripts/emit-harmony.mjs",
+    "emit:wxss": "node scripts/emit-wxss.mjs",
+    "emit:all": "npm run emit:harmony && npm run emit:wxss"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./tokens.json": "./tokens.json"
+  }
+}
