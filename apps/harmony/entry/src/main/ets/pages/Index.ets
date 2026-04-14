@@ -395,7 +395,7 @@ struct Index {
           // Week headers
           Row() {
             ForEach(WEEK_LABELS, (label: string) => {
-              Text(label).fontSize(12).fontColor('#B0B1BB').fontWeight(FontWeight.Medium)
+              Text(label).fontSize(12).fontColor(COLORS.mutedSoft).fontWeight(FontWeight.Medium)
                 .width('14.28%').textAlign(TextAlign.Center)
             }, (label: string) => label)
           }.width('100%')
@@ -411,11 +411,11 @@ struct Index {
                     Text(String(item.day))
                       .fontSize(15)
                       .fontWeight(item.isToday || item.isPeriod ? FontWeight.Bold : FontWeight.Medium)
-                      .fontColor(item.isPeriod ? COLORS.surface : item.isPredicted ? COLORS.floPink : item.isToday ? COLORS.floInk : '#676975')
+                      .fontColor(item.isPeriod ? COLORS.surface : item.isPredicted ? COLORS.floPink : item.isToday ? COLORS.floInk : COLORS.textBody)
                   }
                   .width(40).height(40).borderRadius(20)
                   .justifyContent(FlexAlign.Center).alignItems(HorizontalAlign.Center)
-                  .backgroundColor(item.isPeriod ? COLORS.floPink : item.isToday ? '#F0F1F5' : 'transparent')
+                  .backgroundColor(item.isPeriod ? COLORS.floPink : item.isToday ? COLORS.pinkMist : 'transparent')
                   .borderWidth(item.isPredicted ? 2 : 0).borderColor(COLORS.floPinkBorder)
 
                   if (item.hasSymptoms && !item.isPeriod) {

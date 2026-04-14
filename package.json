@@ -7,12 +7,13 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build:shared && npm run build:prediction && npm run build:api && npm run build:miniapp && npm run build:mobile",
+    "build": "npm run build:design-tokens && npm run build:shared && npm run build:prediction && npm run build:api && npm run build:miniapp && npm run build:mobile",
+    "build:design-tokens": "npm --workspace packages/design-tokens run build",
     "build:shared": "npm --workspace packages/shared run build",
     "build:prediction": "npm --workspace packages/prediction run build",
     "build:api": "npm --workspace apps/api run build",
     "build:miniapp": "npm --workspace apps/miniapp run build && npm --workspace apps/miniapp run lint",
-    "build:mobile": "npm --workspace apps/mobile run typecheck",
+    "build:mobile": "npm run build:design-tokens && npm --workspace apps/mobile run typecheck",
     "lint": "npm run build:shared && npm run build:prediction && npm --workspace apps/api run lint && npm --workspace apps/miniapp run lint && npm run build:mobile",
     "test": "npm run test:prediction",
     "dev:api": "npm run build:shared && npm run build:prediction && npm --workspace apps/api run start:dev",
