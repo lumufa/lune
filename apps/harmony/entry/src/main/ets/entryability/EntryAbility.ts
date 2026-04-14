@@ -1,6 +1,7 @@
 import UIAbility from '@ohos.app.ability.UIAbility';
 import hilog from '@ohos.hilog';
 import window from '@ohos.window';
+import { OnboardingStorage } from '../common/OnboardingStorage';
 
 export default class EntryAbility extends UIAbility {
   onCreate(): void {
@@ -11,12 +12,15 @@ export default class EntryAbility extends UIAbility {
     hilog.info(0x0000, 'women_period', 'EntryAbility onDestroy');
   }
 
-  onWindowStageCreate(windowStage: window.WindowStage): void {
+  async onWindowStageCreate(windowStage: window.WindowStage): Promise<void> {
     hilog.info(0x0000, 'women_period', 'EntryAbility onWindowStageCreate');
 
-    windowStage.loadContent('pages/Index', (err) => {
+    const onboarded = await OnboardingStorage.isComplete(this.context);
+    const target = onboarded ? 'pages/Index' : 'pages/Onboarding';
+
+    windowStage.loadContent(target, (err) => {
       if (err.code) {
-        hilog.error(0x0000, 'women_period', 'Failed to load Index page: %{public}s', JSON.stringify(err) ?? '');
+        hilog.error(0x0000, 'women_period', 'Failed to load page: %{public}s', JSON.stringify(err) ?? '');
       }
     });
   }

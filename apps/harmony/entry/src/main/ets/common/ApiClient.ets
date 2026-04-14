@@ -110,6 +110,10 @@ export class ApiClient {
     return request<ConsentRecord>('/consents', http.RequestMethod.POST, payload);
   }
 
+  withdrawConsent(id: string): Promise<ConsentRecord> {
+    return request<ConsentRecord>(`/consents/${id}/withdraw`, http.RequestMethod.POST);
+  }
+
   exportData(): Promise<ExportBundle> {
     return request<ExportBundle>('/privacy/export', http.RequestMethod.GET);
   }

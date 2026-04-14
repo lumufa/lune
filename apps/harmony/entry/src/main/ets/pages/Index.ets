@@ -1,3 +1,4 @@
+import router from '@ohos.router';
 import { api } from '../common/ApiClient';
 import { COLORS, RADII, SPACING } from '../common/DesignTokens';
 import {
@@ -121,6 +122,19 @@ function formatSymptomLabel(s: string): string {
 
 function clampProgress(v: number, min: number, max: number): number {
   return Math.min(Math.max(((v - min) / (max - min)) * 100, 8), 100);
+}
+
+interface FlowBarRow {
+  label: string;
+  percent: number;
+}
+
+function recordDurationDays(r: CycleRecord): number {
+  const s = new Date(r.startDate);
+  const e = new Date(r.endDate);
+  const sd = new Date(s.getFullYear(), s.getMonth(), s.getDate());
+  const ed = new Date(e.getFullYear(), e.getMonth(), e.getDate());
+  return Math.max(1, Math.round((ed.getTime() - sd.getTime()) / 86400000) + 1);
 }
 
 @Entry
@@ -264,7 +278,7 @@ struct Index {
       Column({ space: SPACING.lg }) {
         // Top bar
         Row({ space: SPACING.sm }) {
-          Column().width(40).height(40).borderRadius(20).backgroundColor('#D9F6F3')
+          Column().width(40).height(40).borderRadius(20).backgroundColor(COLORS.pinkMist)
           Column({ space: 2 }) {
             Text(getTodayLabel()).fontSize(26).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
             Text('Today overview').fontSize(12).fontColor(COLORS.floMuted)
@@ -277,12 +291,12 @@ struct Index {
           // Ring
           Column() {
             if (this.cycleDay() > 0) {
-              Text('Cycle day').fontSize(14).fontColor('#7F808B')
+              Text('Cycle day').fontSize(14).fontColor(COLORS.muted)
               Text(String(this.cycleDay())).fontSize(56).fontWeight(FontWeight.Bold).fontColor(COLORS.floPink)
-              Text('days').fontSize(14).fontColor('#7F808B')
+              Text('days').fontSize(14).fontColor(COLORS.muted)
             } else {
               Text('No records yet.\nStart today.')
-                .fontSize(14).fontColor('#8A8B95').textAlign(TextAlign.Center)
+                .fontSize(14).fontColor(COLORS.muted).textAlign(TextAlign.Center)
             }
           }
           .width(200).height(200).borderRadius(100)
@@ -296,16 +310,16 @@ struct Index {
               Text(this.isLate() ? 'Period is late' : 'Until next period')
                 .fontSize(24).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk).textAlign(TextAlign.Center)
               Text(`${this.daysUntilNext()} days`)
-                .fontSize(40).fontWeight(FontWeight.Bold).fontColor(this.isLate() ? '#F2A94A' : COLORS.floPink)
+                .fontSize(40).fontWeight(FontWeight.Bold).fontColor(this.isLate() ? COLORS.warning : COLORS.floPink)
               if (this.prediction().predictedStartDate) {
                 Text(`Predicted date: ${formatShortDate(this.prediction().predictedStartDate)}`)
-                  .fontSize(14).fontColor('#616270').textAlign(TextAlign.Center)
+                  .fontSize(14).fontColor(COLORS.textBody).textAlign(TextAlign.Center)
               }
             } else {
               Text('Waiting for your first record')
                 .fontSize(24).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk).textAlign(TextAlign.Center)
               Text('Log a start date and the home screen will begin to estimate your cycle.')
-                .fontSize(14).fontColor('#616270').textAlign(TextAlign.Center)
+                .fontSize(14).fontColor(COLORS.textBody).textAlign(TextAlign.Center)
             }
           }.alignItems(HorizontalAlign.Center)
 
@@ -450,7 +464,7 @@ struct Index {
           }
         }
         .width('100%').padding(16).borderRadius(18)
-        .backgroundColor('#FFF5F7').borderWidth(1).borderColor('#FFE2E8')
+        .backgroundColor(COLORS.pinkMist).borderWidth(1).borderColor(COLORS.pinkBorder)
       }
       .width('100%').padding({ left: SPACING.md, right: SPACING.md, top: SPACING.md, bottom: SPACING.xxl })
     }
@@ -471,13 +485,13 @@ struct Index {
           Text('Date range').fontSize(17).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
           Row({ space: 12 }) {
             Column({ space: 6 }) {
-              Text('Start').fontSize(12).fontColor('#8A8B95').fontWeight(FontWeight.Medium)
+              Text('Start').fontSize(12).fontColor(COLORS.muted).fontWeight(FontWeight.Medium)
               Text(this.recStartDate).fontSize(15).fontWeight(FontWeight.Medium).fontColor(COLORS.floInk)
                 .height(48).borderRadius(14).backgroundColor(COLORS.neutralSoft)
                 .padding({ left: 14, right: 14 }).width('100%').textAlign(TextAlign.Center)
             }.layoutWeight(1)
             Column({ space: 6 }) {
-              Text('End').fontSize(12).fontColor('#8A8B95').fontWeight(FontWeight.Medium)
+              Text('End').fontSize(12).fontColor(COLORS.muted).fontWeight(FontWeight.Medium)
               Text(this.recEndDate).fontSize(15).fontWeight(FontWeight.Medium).fontColor(COLORS.floInk)
                 .height(48).borderRadius(14).backgroundColor(COLORS.neutralSoft)
                 .padding({ left: 14, right: 14 }).width('100%').textAlign(TextAlign.Center)
@@ -494,8 +508,8 @@ struct Index {
                 .fontSize(15).fontWeight(FontWeight.Medium)
                 .fontColor(this.recFlow === opt ? COLORS.floPink : COLORS.textBody)
                 .height(46).layoutWeight(1).textAlign(TextAlign.Center).borderRadius(14)
-                .borderWidth(1).borderColor(this.recFlow === opt ? '#F7C9D6' : '#E3E4EA')
-                .backgroundColor(this.recFlow === opt ? '#FFF1F5' : COLORS.surface)
+                .borderWidth(1).borderColor(this.recFlow === opt ? COLORS.pinkBorder : COLORS.lineStrong)
+                .backgroundColor(this.recFlow === opt ? COLORS.pinkMist : COLORS.surface)
                 .onClick(() => { this.recFlow = opt; })
             }, (opt: string) => opt)
           }.width('100%')
@@ -510,8 +524,8 @@ struct Index {
                 .fontSize(15).fontWeight(FontWeight.Medium)
                 .fontColor(this.recPain === opt ? COLORS.floPink : COLORS.textBody)
                 .height(46).layoutWeight(1).textAlign(TextAlign.Center).borderRadius(14)
-                .borderWidth(1).borderColor(this.recPain === opt ? '#F7C9D6' : '#E3E4EA')
-                .backgroundColor(this.recPain === opt ? '#FFF1F5' : COLORS.surface)
+                .borderWidth(1).borderColor(this.recPain === opt ? COLORS.pinkBorder : COLORS.lineStrong)
+                .backgroundColor(this.recPain === opt ? COLORS.pinkMist : COLORS.surface)
                 .onClick(() => { this.recPain = opt; })
             }, (opt: number) => String(opt))
           }.width('100%')
@@ -529,8 +543,8 @@ struct Index {
               }
               .width('30.5%').height(82).borderRadius(16)
               .justifyContent(FlexAlign.Center).alignItems(HorizontalAlign.Center)
-              .borderWidth(1).borderColor(this.recSymptoms.indexOf(opt) >= 0 ? '#FFD6E2' : '#E3E4EA')
-              .backgroundColor(this.recSymptoms.indexOf(opt) >= 0 ? '#FFF1F5' : COLORS.surface)
+              .borderWidth(1).borderColor(this.recSymptoms.indexOf(opt) >= 0 ? COLORS.pinkBorder : COLORS.lineStrong)
+              .backgroundColor(this.recSymptoms.indexOf(opt) >= 0 ? COLORS.pinkMist : COLORS.surface)
               .margin({ right: '3%', bottom: 12 })
               .onClick(() => {
                 const idx = this.recSymptoms.indexOf(opt);
@@ -553,7 +567,7 @@ struct Index {
                 .fontSize(14).fontWeight(FontWeight.Medium)
                 .fontColor(this.recMood === opt ? COLORS.floPink : COLORS.textBody)
                 .height(38).padding({ left: 14, right: 14 }).borderRadius(19)
-                .backgroundColor(this.recMood === opt ? '#FFE7EE' : COLORS.neutralSoft)
+                .backgroundColor(this.recMood === opt ? COLORS.pinkMist : COLORS.neutralSoft)
                 .margin({ right: 10, bottom: 10 })
                 .onClick(() => { this.recMood = opt; })
             }, (opt: string) => opt)
@@ -572,12 +586,114 @@ struct Index {
         // Save
         Button(this.recSubmitting ? 'Saving...' : 'Save log')
           .width('100%').height(56).borderRadius(18)
-          .backgroundColor('#111217').fontColor(COLORS.surface)
+          .backgroundColor(COLORS.ink).fontColor(COLORS.surface)
           .fontSize(17).fontWeight(FontWeight.Bold)
           .onClick(() => { this.submitRecord(); })
       }
       .width('100%').padding({ left: SPACING.lg, right: SPACING.lg, top: 18, bottom: SPACING.xxl })
     }
+  }
+
+  /* ─── Builder: Trends Tab ─── */
+  @Builder
+  private TrendsTab() {
+    Scroll() {
+      Column({ space: 18 }) {
+        Column({ space: 4 }) {
+          Text('Trends').fontSize(24).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
+          Text('Averages and recent activity').fontSize(14).fontColor(COLORS.floMuted)
+        }.width('100%').alignItems(HorizontalAlign.Start)
+
+        if (this.allRecords().length === 0) {
+          Column({ space: 8 }) {
+            Text('No data yet').fontSize(18).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
+            Text('Start logging to see your trends here.').fontSize(14).fontColor(COLORS.floMuted).textAlign(TextAlign.Center)
+          }.width('100%').padding(32).borderRadius(20).backgroundColor(COLORS.surface)
+            .borderWidth(1).borderColor(COLORS.lineStrong)
+            .alignItems(HorizontalAlign.Center)
+        } else {
+          if (this.allRecords().length < 3) {
+            Column({ space: 10 }) {
+              Row() {
+                Column().width(`${Math.round((Math.min(this.allRecords().length, 3) / 3) * 100)}%`)
+                  .height(6).borderRadius(3).backgroundColor(COLORS.accent)
+              }.width('100%').height(6).borderRadius(3).backgroundColor(COLORS.pinkBorder)
+              Text(`${3 - this.allRecords().length} more record(s) needed for trend analysis`)
+                .fontSize(13).fontColor(COLORS.inkSecondary).textAlign(TextAlign.Center)
+            }.width('100%').padding(16).borderRadius(20).backgroundColor(COLORS.pinkMist)
+              .borderWidth(1).borderColor(COLORS.pinkBorder)
+          }
+
+          if (this.allRecords().length >= 3) {
+            Row({ space: 12 }) {
+              Column({ space: 2 }) {
+                Text(String(this.summary().averageCycleLength || 28)).fontSize(28).fontWeight(FontWeight.Bolder).fontColor(COLORS.floPink)
+                Text('days').fontSize(11).fontColor(COLORS.muted).fontWeight(FontWeight.Medium)
+                Text('Avg cycle').fontSize(12).fontColor(COLORS.inkSecondary).fontWeight(FontWeight.Medium)
+              }.layoutWeight(1).padding(16).borderRadius(20).backgroundColor(COLORS.surface)
+                .borderWidth(1).borderColor(COLORS.lineStrong).alignItems(HorizontalAlign.Center)
+              Column({ space: 2 }) {
+                Text(String(this.summary().averagePeriodLength || 5)).fontSize(28).fontWeight(FontWeight.Bolder).fontColor(COLORS.floPink)
+                Text('days').fontSize(11).fontColor(COLORS.muted).fontWeight(FontWeight.Medium)
+                Text('Avg period').fontSize(12).fontColor(COLORS.inkSecondary).fontWeight(FontWeight.Medium)
+              }.layoutWeight(1).padding(16).borderRadius(20).backgroundColor(COLORS.surface)
+                .borderWidth(1).borderColor(COLORS.lineStrong).alignItems(HorizontalAlign.Center)
+            }.width('100%')
+          }
+
+          Column({ space: 12 }) {
+            Text('Flow distribution').fontSize(17).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
+            ForEach(this.buildFlowDistArkTs(), (item: FlowBarRow) => {
+              Row({ space: 12 }) {
+                Text(item.label).width(64).fontSize(13).fontWeight(FontWeight.Medium).fontColor(COLORS.inkSecondary)
+                Stack({ alignContent: Alignment.Start }) {
+                  Column().layoutWeight(1).height(12).borderRadius(6).backgroundColor(COLORS.neutralSoft)
+                  Column().width(`${item.percent}%`).height(12).borderRadius(6).backgroundColor(COLORS.accent)
+                }.layoutWeight(1).height(12)
+                Text(`${item.percent}%`).width(48).fontSize(12).fontWeight(FontWeight.Medium).fontColor(COLORS.muted).textAlign(TextAlign.End)
+              }.width('100%').alignItems(VerticalAlign.Center)
+            }, (item: FlowBarRow) => item.label)
+          }.cardStyle()
+
+          Column({ space: 12 }) {
+            Text('Recent records').fontSize(17).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
+            ForEach(this.recentRecords(), (r: CycleRecord, idx: number) => {
+              Row() {
+                Column({ space: 2 }) {
+                  Text(`${r.startDate.slice(0, 10)} → ${r.endDate.slice(0, 10)}`)
+                    .fontSize(14).fontWeight(FontWeight.Medium).fontColor(COLORS.floInk)
+                  Text(`${recordDurationDays(r)} days`).fontSize(11).fontColor(COLORS.muted)
+                }.layoutWeight(1).alignItems(HorizontalAlign.Start)
+                Text(formatFlowLabel(r.flowLevel))
+                  .fontSize(12).fontWeight(FontWeight.Medium).fontColor(COLORS.accent)
+                  .padding({ left: 10, right: 10, top: 4, bottom: 4 }).borderRadius(8).backgroundColor(COLORS.accentSoft)
+              }.width('100%').padding({ top: 10, bottom: 10 })
+                .border({ width: { bottom: idx < this.recentRecords().length - 1 ? 1 : 0 }, color: COLORS.divider })
+            }, (r: CycleRecord) => r.id)
+          }.cardStyle()
+        }
+      }
+      .width('100%').padding({ left: SPACING.lg, right: SPACING.lg, top: 18, bottom: SPACING.xxl })
+    }
+  }
+
+  private buildFlowDistArkTs(): Array<FlowBarRow> {
+    const recs = this.allRecords();
+    let light = 0;
+    let medium = 0;
+    let heavy = 0;
+    recs.forEach((r: CycleRecord) => {
+      if (r.flowLevel === 'light') light++;
+      else if (r.flowLevel === 'medium') medium++;
+      else if (r.flowLevel === 'heavy') heavy++;
+    });
+    const total = recs.length || 1;
+    const result: Array<FlowBarRow> = [
+      { label: 'Light', percent: Math.round((light / total) * 100) },
+      { label: 'Medium', percent: Math.round((medium / total) * 100) },
+      { label: 'Heavy', percent: Math.round((heavy / total) * 100) }
+    ];
+    return result;
   }
 
   /* ─── Builder: Settings Tab ─── */
@@ -602,7 +718,7 @@ struct Index {
             Button('-').type(ButtonType.Circle).width(42).height(42)
               .backgroundColor(COLORS.neutralSoft).fontColor(COLORS.floInk).fontSize(24)
               .onClick(() => { if (this.cycleLength > 20) this.cycleLength -= 1; })
-            Column().layoutWeight(1).height(10).borderRadius(999).backgroundColor('#EFEFF3')
+            Column().layoutWeight(1).height(10).borderRadius(999).backgroundColor(COLORS.neutralSoft)
             Column()
               .width(`${clampProgress(this.cycleLength, 20, 45)}%`)
               .height(10).borderRadius(999).backgroundColor(COLORS.floPink)
@@ -624,7 +740,7 @@ struct Index {
             Button('-').type(ButtonType.Circle).width(42).height(42)
               .backgroundColor(COLORS.neutralSoft).fontColor(COLORS.floInk).fontSize(24)
               .onClick(() => { if (this.periodLength > 2) this.periodLength -= 1; })
-            Column().layoutWeight(1).height(10).borderRadius(999).backgroundColor('#EFEFF3')
+            Column().layoutWeight(1).height(10).borderRadius(999).backgroundColor(COLORS.neutralSoft)
             Button('+').type(ButtonType.Circle).width(42).height(42)
               .backgroundColor(COLORS.neutralSoft).fontColor(COLORS.floInk).fontSize(24)
               .onClick(() => { if (this.periodLength < 10) this.periodLength += 1; })
@@ -640,27 +756,33 @@ struct Index {
 
         // Privacy card
         Column({ space: 14 }) {
-          Text('Privacy & data').fontSize(17).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
-          Text('Your data stays under the current account and can be exported or deleted.')
+          Row() {
+            Text('Privacy & data').fontSize(17).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
+            Blank()
+            Text('›').fontSize(22).fontColor(COLORS.muted)
+          }.width('100%')
+          Text('Manage consent toggles, export log, and delete account.')
             .fontSize(14).lineHeight(21).fontColor(COLORS.textBody)
           Row({ space: 12 }) {
             Button('Export data')
               .layoutWeight(1).height(48).borderRadius(16)
-              .backgroundColor('#111217').fontColor(COLORS.surface)
+              .backgroundColor(COLORS.ink).fontColor(COLORS.surface)
               .fontSize(15).fontWeight(FontWeight.Bold)
               .onClick(async () => {
                 try { await api.exportData(); } catch { /* silent */ }
               })
             Button('Delete account')
               .layoutWeight(1).height(48).borderRadius(16)
-              .backgroundColor('#FFF1F3').fontColor('#D14A72')
+              .backgroundColor(COLORS.pinkMist).fontColor(COLORS.accentDeep)
               .fontSize(15).fontWeight(FontWeight.Bold)
-              .borderWidth(1).borderColor('#FCD6DD')
+              .borderWidth(1).borderColor(COLORS.pinkBorder)
               .onClick(async () => {
                 try { await api.deleteAccount(); this.refreshDashboard(); } catch { /* silent */ }
               })
           }.width('100%')
-        }.cardStyle()
+        }
+        .cardStyle()
+        .onClick(() => router.pushUrl({ url: 'pages/Privacy' }))
       }
       .width('100%').padding({ left: SPACING.lg, right: SPACING.lg, top: 18, bottom: SPACING.xxl })
     }
@@ -681,8 +803,12 @@ struct Index {
       }.tabBar(this.TabItem('Log', 2))
 
       TabContent() {
+        this.TrendsTab()
+      }.tabBar(this.TabItem('Trends', 3))
+
+      TabContent() {
         this.SettingsTab()
-      }.tabBar(this.TabItem('Settings', 3))
+      }.tabBar(this.TabItem('Settings', 4))
     }
     .onChange((index: number) => { this.currentTab = index; })
     .barHeight(72)
@@ -692,7 +818,7 @@ struct Index {
   @Builder
   private TabItem(label: string, index: number) {
     Column({ space: 4 }) {
-      Text(label === 'Home' ? '🏠' : label === 'Calendar' ? '📅' : label === 'Log' ? '✏️' : '⚙️')
+      Text(label === 'Home' ? '🏠' : label === 'Calendar' ? '📅' : label === 'Log' ? '✏️' : label === 'Trends' ? '📊' : '⚙️')
         .fontSize(20)
       Text(label)
         .fontSize(12).fontWeight(FontWeight.Medium)
@@ -708,6 +834,6 @@ function cardStyle() {
   .borderRadius(20)
   .backgroundColor(COLORS.surface)
   .borderWidth(1)
-  .borderColor('#EFEFF3')
+  .borderColor(COLORS.lineStrong)
   .padding(18)
 }

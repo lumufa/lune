@@ -1,5 +1,7 @@
 {
   "src": [
-    "pages/Index"
+    "pages/Index",
+    "pages/Onboarding",
+    "pages/Privacy"
   ]
 }
