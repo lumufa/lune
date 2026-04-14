@@ -22,9 +22,23 @@ const rpx = (n) => `${n * 2}rpx`;
 
 function emitSemanticColors() {
   const lines = Object.entries(semantic).map(
-    ([k, v]) => `  --color-${kebab(k)}: ${v};`
+    ([k, v]) => `  --${kebab(k)}: ${v};`
   );
   return lines;
+}
+
+function emitLegacyAliases() {
+  return [
+    `  --pink: ${semantic.accent};`,
+    `  --pink-soft: ${semantic.accentGradientTo};`,
+    `  --ink-2: ${semantic.inkSecondary};`,
+    `  --muted-2: ${semantic.mutedSoft};`,
+    `  --bg-dim: ${semantic.pinkMist};`,
+    `  --radius-xl: 28rpx;`,
+    `  --radius-lg: 24rpx;`,
+    `  --radius-md: 20rpx;`,
+    `  --radius-sm: 16rpx;`
+  ];
 }
 
 function emitRadius() {
@@ -70,7 +84,10 @@ const rootVars = [
   ...emitFontSize(),
   "",
   "/* Shadows */",
-  ...emitShadow()
+  ...emitShadow(),
+  "",
+  "/* Legacy aliases (miniapp; last so they override canonical values) */",
+  ...emitLegacyAliases()
 ];
 
 const css = `page {\n${rootVars.join("\n")}\n}\n`;

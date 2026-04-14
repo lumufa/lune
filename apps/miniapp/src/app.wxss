@@ -1,29 +1,6 @@
+@import "./styles/tokens.wxss";
+
 page {
-  --bg: #FBF8F9;
-  --surface: #ffffff;
-  --surface-sunken: #FFF5F7;
-  --ink: #1E1E2C;
-  --ink-2: #3C3C4A;
-  --muted: #8C8C9A;
-  --muted-2: #C4C4CE;
-  --line: rgba(0, 0, 0, 0.04);
-  --line-strong: rgba(0, 0, 0, 0.08);
-  --accent: #FF4D6A;
-  --accent-press: #E8445D;
-  --accent-soft: rgba(255, 77, 106, 0.1);
-  --accent-deep: #D14060;
-  --danger: #d64a3b;
-  --pink: #FF4D6A;
-  --pink-soft: #FF6B82;
-  --pink-pale: #FFE8EC;
-  --pink-mist: #FFF5F7;
-  --pink-border: #FFD6DF;
-  --divider: rgba(0, 0, 0, 0.04);
-  --radius-xl: 28rpx;
-  --radius-lg: 24rpx;
-  --radius-md: 20rpx;
-  --radius-sm: 16rpx;
-  --shadow-card: 0 2rpx 16rpx rgba(0, 0, 0, 0.02);
   background: var(--bg);
   color: var(--ink);
   min-height: 100%;

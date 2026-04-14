@@ -1,0 +1,91 @@
+/* AUTO-GENERATED from packages/design-tokens/tokens.json */
+/* Do not edit by hand. Run `npm run emit:wxss` from packages/design-tokens to refresh. */
+/* Lengths are emitted in rpx (= logical px * 2). */
+
+page {
+/* Semantic colors */
+  --bg: #FBF8F9;
+  --surface: #FFFFFF;
+  --surface-sunken: #FFF5F7;
+  --ink: #1E1E2C;
+  --ink-secondary: #3C3C4A;
+  --ink-body: #5B5D67;
+  --muted: #8C8C9A;
+  --muted-soft: #C4C4CE;
+  --line: rgba(0, 0, 0, 0.04);
+  --line-strong: rgba(0, 0, 0, 0.08);
+  --divider: rgba(0, 0, 0, 0.04);
+  --accent: #FF4D6A;
+  --accent-press: #E8445D;
+  --accent-deep: #D14060;
+  --accent-soft: rgba(255, 77, 106, 0.10);
+  --accent-gradient-from: #FF4D6A;
+  --accent-gradient-to: #FF6B82;
+  --pink-pale: #FFE8EC;
+  --pink-mist: #FFF5F7;
+  --pink-border: #FFD6DF;
+  --danger: #D64A3B;
+  --danger-link: #E53E3E;
+  --warning: #F2A94A;
+  --symptom-dot: #7C8CF4;
+  --chip-idle: #F5F5F5;
+  --chip-idle-ink: #3C3C4A;
+  --ring-border: #FFD6DF;
+
+/* Radius */
+  --radius-xs: 16rpx;
+  --radius-sm: 24rpx;
+  --radius-md: 32rpx;
+  --radius-lg: 40rpx;
+  --radius-xl: 56rpx;
+  --radius-card: 40rpx;
+  --radius-hero: 56rpx;
+  --radius-pill: 9999rpx;
+
+/* Spacing (rpx) */
+  --space-xxs: 8rpx;
+  --space-xs: 16rpx;
+  --space-sm: 24rpx;
+  --space-md: 32rpx;
+  --space-lg: 40rpx;
+  --space-xl: 48rpx;
+  --space-xxl: 64rpx;
+  --space-screen-gutter: 32rpx;
+  --space-screen-top: 32rpx;
+  --space-screen-bottom: 120rpx;
+  --space-cta-spacer: 200rpx;
+
+/* Typography size (rpx) */
+  --font-micro: 18rpx;
+  --font-caption: 22rpx;
+  --font-footnote: 24rpx;
+  --font-meta-label: 26rpx;
+  --font-body: 28rpx;
+  --font-body-large: 30rpx;
+  --font-subheading: 32rpx;
+  --font-title: 36rpx;
+  --font-title-large: 40rpx;
+  --font-heading: 48rpx;
+  --font-display-small: 52rpx;
+  --font-display-large: 60rpx;
+  --font-number-xl: 80rpx;
+  --font-hero-number: 112rpx;
+
+/* Shadows */
+  --shadow-card: 0rpx 2rpx 16rpx rgba(0, 0, 0, 0.02);
+  --shadow-cta: 0rpx 20rpx 72rpx rgba(255, 77, 106, 0.28);
+  --shadow-cta-loud: 0rpx 20rpx 72rpx rgba(255, 77, 106, 0.32);
+  --shadow-cta-float: 0rpx 16rpx 48rpx rgba(255, 77, 106, 0.30);
+  --shadow-hero: 0rpx 16rpx 96rpx rgba(255, 77, 106, 0.10);
+
+/* Legacy aliases (miniapp; last so they override canonical values) */
+  --pink: #FF4D6A;
+  --pink-soft: #FF6B82;
+  --ink-2: #3C3C4A;
+  --muted-2: #C4C4CE;
+  --bg-dim: #FFF5F7;
+  --radius-xl: 28rpx;
+  --radius-lg: 24rpx;
+  --radius-md: 20rpx;
+  --radius-sm: 16rpx;
+}
