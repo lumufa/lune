@@ -6,8 +6,9 @@
 
 ![platform-miniapp](https://img.shields.io/badge/WeChat%20Mini%20Program-Taro-1AAD19) ![platform-android](https://img.shields.io/badge/Android-Expo%20RN-3DDC84) ![platform-ios](https://img.shields.io/badge/iOS-Expo%20RN-000000) ![platform-harmony](https://img.shields.io/badge/HarmonyOS-ArkTS-000000) ![api](https://img.shields.io/badge/Server-NestJS-EA2845) ![monorepo](https://img.shields.io/badge/Monorepo-Yarn%20Workspaces-2C8EBB)
 
-<!-- TODO(author to fill in): Hero shot — the same screen rendered side-by-side on WeChat Mini Program / Android / iOS / HarmonyOS -->
-<!-- ![hero](docs/assets/hero-4-platforms.png) -->
+![Lune home — cycle day 11 · 19 days until next · adaptive prediction window](docs/images/hero.jpg)
+
+> Screenshots taken from the Android client; WeChat Mini Program / iOS / HarmonyOS clients each iterate natively — screenshots to follow.
 
 ---
 
@@ -36,11 +37,11 @@ Period-tracking apps are practically a smartphone staple by now, yet the market 
 | **AI monthly pattern interpretation** | Connects to OpenAI-compatible endpoints (DeepSeek / Doubao etc.) with strict JSON structure and sanitized statistics. Four error classes — unauthorized / unconfigured / upstream failure / network timeout — are routed separately. |
 | **Privacy-first architecture** | Sensitive health consent (`sensitive_health_data`) and AI-call consent (`ai_monthly_interpretation`) are independent types in the data model. Export and deletion are first-class features. |
 
-<!-- TODO(author to fill in): Animated GIF of the cycle prediction main screen -->
-<!-- ![calendar](docs/assets/calendar.gif) -->
+| Calendar — period marks + today indicator | Trends — flow distribution + last 5 cycles | Log — flow / pain / symptoms / mood | Reminders — quiet hours + three reminder types |
+|:---:|:---:|:---:|:---:|
+| ![Calendar](docs/images/calendar.jpg) | ![Trends](docs/images/trends.jpg) | ![Log](docs/images/record.jpg) | ![Reminders](docs/images/reminders.jpg) |
 
-<!-- TODO(author to fill in): Animated GIF of the AI monthly interpretation feature -->
-<!-- ![ai-insight](docs/assets/ai-insight.gif) -->
+<!-- AI monthly interpretation v1 is only wired up in the WeChat Mini Program client (highlight 2 details the full prompt and degradation flow); screenshot to follow. -->
 
 ---
 
@@ -272,6 +273,8 @@ The "window automatically widens when variability is high" design is the most-ov
 - `exportData` at [`apps/api/src/modules/privacy/privacy.service.ts:17-45`](./apps/api/src/modules/privacy/privacy.service.ts) returns **everything** in one call (cycles / reminders / consents / privacyActions / telemetry / a freshly computed prediction), and writes the export action itself into the audit log (`PrivacyActionType: "export_data"`).
 - `deleteAccount` is not a soft delete: [`privacy.service.ts:36-45`](./apps/api/src/modules/privacy/privacy.service.ts) calls `this.store.deleteUser(userId)` directly and clears every Map.
 - **Design philosophy**: the better export and delete are, the **more likely users are to choose to stay** — because they know they can leave at any time. Making the exit door big is how you ensure the people who stay are doing so by choice.
+
+![Settings screen — Export data and Delete account are first-class entry points](docs/images/settings.jpg)
 
 ---
 

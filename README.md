@@ -6,8 +6,9 @@
 
 ![platform-miniapp](https://img.shields.io/badge/微信小程序-Taro-1AAD19) ![platform-android](https://img.shields.io/badge/Android-Expo%20RN-3DDC84) ![platform-ios](https://img.shields.io/badge/iOS-Expo%20RN-000000) ![platform-harmony](https://img.shields.io/badge/HarmonyOS-ArkTS-000000) ![api](https://img.shields.io/badge/Server-NestJS-EA2845) ![monorepo](https://img.shields.io/badge/Monorepo-Yarn%20Workspaces-2C8EBB)
 
-<!-- TODO(作者补充): Hero 4 端拼图——同一界面在 微信小程序 / Android / iOS / 鸿蒙 上并排展示 -->
-<!-- ![hero](docs/assets/hero-4-platforms.png) -->
+![Lune 首页 — 周期第 11 天 · 距下次 19 天 · 自适应预测窗口](docs/images/hero.jpg)
+
+> 截图取自 Android 端；微信小程序 / iOS / 鸿蒙端 UI 各自原生迭代，截图后续补。
 
 ---
 
@@ -36,11 +37,11 @@
 | **AI 本月模式解读** | DeepSeek/Doubao 等 OpenAI-兼容端点接入，严格 JSON 结构 + 脱敏统计，未授权 / 未配置 / 上游异常 / 网络超时四类错误分流。 |
 | **隐私优先架构** | 健康数据敏感同意 (`sensitive_health_data`) 与 AI 调用同意 (`ai_monthly_interpretation`) 在数据模型上就是独立类型；导出/删除是一等公民功能。 |
 
-<!-- TODO(作者补充): 周期预测主界面 GIF -->
-<!-- ![calendar](docs/assets/calendar.gif) -->
+| 日历 · 经期标记 + 今日定位 | 趋势 · 流量分布 + 最近 5 次记录 | 记录 · 血量/疼痛/症状/心情 | 提醒 · 免打扰 + 三类提醒 |
+|:---:|:---:|:---:|:---:|
+| ![日历](docs/images/calendar.jpg) | ![趋势](docs/images/trends.jpg) | ![记录](docs/images/record.jpg) | ![提醒](docs/images/reminders.jpg) |
 
-<!-- TODO(作者补充): AI 月度解读功能 GIF -->
-<!-- ![ai-insight](docs/assets/ai-insight.gif) -->
+<!-- AI 月度解读 v1 仅微信小程序端有 UI 入口（亮点 2 详述完整 prompt 与降级流程），截图后续补。 -->
 
 ---
 
@@ -272,6 +273,8 @@ const confidence =
 - [`apps/api/src/modules/privacy/privacy.service.ts:17-45`](./apps/api/src/modules/privacy/privacy.service.ts) 的 `exportData` 一次性返回**所有**用户数据（cycles / reminders / consents / privacyActions / telemetry / 实时计算的 prediction），并把这次导出操作本身写入审计日志（`PrivacyActionType: "export_data"`）。
 - `deleteAccount` 不是软删除：[`privacy.service.ts:36-45`](./apps/api/src/modules/privacy/privacy.service.ts) 直接调 `this.store.deleteUser(userId)` 清除所有 Map。
 - **设计哲学**：导出/删除如果做得越好，用户**越可能选择留下**——因为他知道随时可以走。把退出门做大，是为了让留下的人是自愿的。
+
+![设置页 — 导出数据 + 删除账号是第一层入口](docs/images/settings.jpg)
 
 ---
 
