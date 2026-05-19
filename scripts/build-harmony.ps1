@@ -146,6 +146,16 @@ if (Test-Path $hvigorWorkspaceNodeModules) {
   }
 }
 
+$spawnShimPath = Join-Path $repoRoot 'scripts\harmony-spawn-shim.cjs'
+if (Test-Path $spawnShimPath) {
+  $shimNodeOption = "--require=`"$($spawnShimPath -replace '\\', '/')`""
+  if ([string]::IsNullOrWhiteSpace($env:NODE_OPTIONS)) {
+    $env:NODE_OPTIONS = $shimNodeOption
+  } elseif ($env:NODE_OPTIONS -notlike "*$spawnShimPath*") {
+    $env:NODE_OPTIONS = "$shimNodeOption $env:NODE_OPTIONS"
+  }
+}
+
 $hvigorCliScript = Join-Path $env:USERPROFILE ".hvigor\project_caches\$projectHash\workspace\node_modules\@ohos\hvigor\bin\hvigor.js"
 
 function Invoke-HvigorTask {

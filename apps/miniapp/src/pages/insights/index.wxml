@@ -5,8 +5,32 @@
   </view>
 
   <view class="hero-block" wx:if="{{dashboard}}">
-    <text class="hero-subtitle">{{copy.heroSubtitle}}</text>
     <view class="tag-row"><text class="tag">{{copy.interactiveLabel}}</text></view>
+  </view>
+
+  <view class="panel ai-card" wx:if="{{dashboard}}">
+    <view class="row ai-head">
+      <view class="data-head-left">
+        <text class="card-title">{{copy.aiTitle}}</text>
+        <text class="muted">{{copy.aiSubtitle}}</text>
+      </view>
+      <button
+        class="primary-btn ai-btn"
+        size="mini"
+        loading="{{aiLoading}}"
+        disabled="{{aiLoading || !canRequestAI}}"
+        bindtap="onTapAIInterpret"
+      >{{aiLoading ? copy.aiLoadingLabel : copy.aiButtonLabel}}</button>
+    </view>
+    <text class="muted ai-hint" wx:if="{{!aiResult && !aiError && !canRequestAI}}">{{copy.aiNotEnough}}</text>
+    <text class="muted ai-hint" wx:if="{{aiError}}">{{aiError}}</text>
+    <view class="ai-result" wx:if="{{aiResult}}">
+      <text class="ai-interpretation">{{aiResult.interpretation}}</text>
+      <view class="ai-highlights">
+        <text class="ai-highlight" wx:for="{{aiResult.highlights}}" wx:key="*this">· {{item}}</text>
+      </view>
+      <text class="muted ai-disclaimer">{{aiResult.disclaimer}}</text>
+    </view>
   </view>
 
   <view class="stack" wx:if="{{dashboard}}">
@@ -14,7 +38,6 @@
       <view class="row">
         <view class="data-head-left">
           <text class="card-title">{{copy.breakdownTitle}}</text>
-          <text class="muted">{{copy.breakdownSubtitle}}</text>
         </view>
         <text class="data-score">{{breakdownPercent}}%</text>
       </view>
@@ -36,7 +59,6 @@
       <view class="row">
         <view class="data-head-left">
           <text class="card-title">{{copy.symptomTitle}}</text>
-          <text class="muted">{{copy.symptomSubtitle}}</text>
         </view>
         <text class="data-score">{{correlationPercent}}%</text>
       </view>

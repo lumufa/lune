@@ -1,6 +1,19 @@
-import type { CycleRecord, FlowLevel, MoodTag, SymptomTag } from "@women-period/shared";
+import type {
+  AIInterpretationSnapshot,
+  AILanguage,
+  CycleRecord,
+  FlowLevel,
+  MoodTag,
+  SymptomTag
+} from "@women-period/shared";
+import type { ApiRequestError } from "../../services/api";
 import type { DashboardResponse } from "../../types";
 import { api, isApiNetworkError } from "../../services/api";
+
+const AI_CONSENT_VERSION = "2026-04-24";
+const AI_CONSENT_PURPOSE =
+  "将脱敏的周期统计数据（周期长度/流量分布/高频症状等）发送给第三方大模型，用于生成本月模式解读，原始日志与 ID 不会出端。";
+const MIN_CYCLES_FOR_AI = 2;
 import {
   getDisplayLanguageToggleLabel,
   getFlowLabel,
@@ -15,12 +28,9 @@ import {
 interface InsightsCopy {
   languageButtonLabel: string;
   heroTitle: string;
-  heroSubtitle: string;
   interactiveLabel: string;
   breakdownTitle: string;
-  breakdownSubtitle: string;
   symptomTitle: string;
-  symptomSubtitle: string;
   predictabilityTitle: string;
   predictabilitySubtitle: string;
   scoreLabel: string;
@@ -33,6 +43,18 @@ interface InsightsCopy {
   emptyState: string;
   loadFailed: string;
   networkUnavailable: string;
+  aiTitle: string;
+  aiSubtitle: string;
+  aiButtonLabel: string;
+  aiLoadingLabel: string;
+  aiNotEnough: string;
+  aiConsentTitle: string;
+  aiConsentContent: string;
+  aiConsentConfirm: string;
+  aiConsentCancel: string;
+  aiErrorGeneric: string;
+  aiErrorUpstream: string;
+  aiErrorUnconfigured: string;
 }
 
 interface BreakdownItem {
@@ -49,14 +71,9 @@ function buildCopy(language: DisplayLanguage): InsightsCopy {
   return {
     languageButtonLabel: getDisplayLanguageToggleLabel(language),
     heroTitle: language === "en" ? "Period Insight" : "周期洞察",
-    heroSubtitle: language === "en" ? "Interactive cards. Tap to reveal details." : "可交互趋势卡片，点击展开细节。",
     interactiveLabel: language === "en" ? "Interactive" : "可交互",
     breakdownTitle: language === "en" ? "Period Breakdown" : "经期分布",
-    breakdownSubtitle:
-      language === "en" ? "Flow trend over recent cycles." : "最近周期的流量趋势。",
     symptomTitle: language === "en" ? "Symptom Correlation" : "症状关联",
-    symptomSubtitle:
-      language === "en" ? "Tiny cycle timing relation." : "周期内症状与情绪的关联。",
     predictabilityTitle: language === "en" ? "Cycle Predictability" : "周期可预测性",
     predictabilitySubtitle:
       language === "en" ? "Stability score from your own records." : "基于历史记录的稳定度评分。",
@@ -84,7 +101,32 @@ function buildCopy(language: DisplayLanguage): InsightsCopy {
     networkUnavailable:
       language === "en"
         ? "API offline. Run npm.cmd run start:api."
-        : "接口未连接，请先执行 npm.cmd run start:api"
+        : "接口未连接，请先执行 npm.cmd run start:api",
+    aiTitle: language === "en" ? "AI Monthly Reading" : "AI 本月解读",
+    aiSubtitle:
+      language === "en"
+        ? "Pattern summary from anonymized stats — not medical advice."
+        : "基于脱敏统计的模式总结，不作医疗建议",
+    aiButtonLabel: language === "en" ? "Generate" : "生成解读",
+    aiLoadingLabel: language === "en" ? "Generating…" : "生成中…",
+    aiNotEnough:
+      language === "en"
+        ? "Log at least 2 cycles to enable AI reading."
+        : "至少完成 2 个周期记录后可使用 AI 解读",
+    aiConsentTitle: language === "en" ? "Enable AI Reading" : "开启 AI 解读",
+    aiConsentContent:
+      language === "en"
+        ? "Anonymized stats (cycle length, flow distribution, top symptoms) will be sent to a third-party LLM. Raw notes and your ID never leave the server."
+        : "我们会将脱敏的统计数据（周期长度、流量分布、高频症状等）发送给第三方大模型，原始笔记与用户 ID 不会出端。",
+    aiConsentConfirm: language === "en" ? "Agree" : "同意并继续",
+    aiConsentCancel: language === "en" ? "Cancel" : "取消",
+    aiErrorGeneric: language === "en" ? "AI reading failed" : "AI 解读失败",
+    aiErrorUpstream:
+      language === "en" ? "Upstream model error, please retry later" : "模型服务异常，请稍后重试",
+    aiErrorUnconfigured:
+      language === "en"
+        ? "AI provider not configured on this server"
+        : "该环境未配置 AI 服务"
   };
 }
 
@@ -218,7 +260,11 @@ Page({
     symptomLabels: [] as string[],
     language: getStoredDisplayLanguage() as DisplayLanguage,
     copy: buildCopy(getStoredDisplayLanguage()),
-    predictabilityRationale: ""
+    predictabilityRationale: "",
+    aiLoading: false,
+    aiResult: null as AIInterpretationSnapshot | null,
+    aiError: "",
+    canRequestAI: false
   },
 
   onShow() {
@@ -292,7 +338,8 @@ Page({
         moodB: getMoodLabel(moodB, language),
         breakdownItems: buildBreakdownItems(dashboard.records, language),
         symptomLabels: getTopSymptoms(dashboard.records).map((item) => getSymptomLabel(item, language)),
-        predictabilityRationale: dashboard.prediction.rationale
+        predictabilityRationale: dashboard.prediction.rationale,
+        canRequestAI: dashboard.summary.recordCount >= MIN_CYCLES_FOR_AI
       });
     } catch (error) {
       wx.showToast({
@@ -300,5 +347,80 @@ Page({
         icon: "none"
       });
     }
+  },
+
+  async onTapAIInterpret() {
+    if (this.data.aiLoading || !this.data.canRequestAI) {
+      return;
+    }
+
+    const copy = this.data.copy;
+    try {
+      const granted = await this.ensureAIConsent();
+      if (!granted) {
+        return;
+      }
+    } catch (error) {
+      this.setData({ aiError: copy.aiErrorGeneric });
+      return;
+    }
+
+    const apiLanguage: AILanguage = this.data.language === "en" ? "en" : "zh";
+    this.setData({ aiLoading: true, aiError: "", aiResult: null });
+
+    try {
+      const result = await api.requestAIInterpretation({ language: apiLanguage });
+      this.setData({ aiResult: result, aiLoading: false });
+    } catch (error) {
+      const apiError = error as ApiRequestError;
+      let message = copy.aiErrorGeneric;
+      if (isApiNetworkError(error)) {
+        message = copy.networkUnavailable;
+      } else if (apiError?.kind === "http" && apiError.statusCode === 503) {
+        message = copy.aiErrorUnconfigured;
+      } else if (apiError?.kind === "http" && apiError.statusCode === 502) {
+        message = copy.aiErrorUpstream;
+      }
+      this.setData({ aiLoading: false, aiError: message });
+    }
+  },
+
+  async ensureAIConsent(): Promise<boolean> {
+    const copy = this.data.copy;
+    try {
+      const consents = await api.listConsents();
+      const hasGranted = consents.some(
+        (record) => record.type === "ai_monthly_interpretation" && record.status === "granted"
+      );
+      if (hasGranted) {
+        return true;
+      }
+    } catch {
+      // If list fails, still try to show the modal; grant may still succeed.
+    }
+
+    const modalResult = await new Promise<WechatMiniprogram.ShowModalSuccessCallbackResult>(
+      (resolve, reject) => {
+        wx.showModal({
+          title: copy.aiConsentTitle,
+          content: copy.aiConsentContent,
+          confirmText: copy.aiConsentConfirm,
+          cancelText: copy.aiConsentCancel,
+          success: resolve,
+          fail: reject
+        });
+      }
+    );
+
+    if (!modalResult.confirm) {
+      return false;
+    }
+
+    await api.grantConsent({
+      type: "ai_monthly_interpretation",
+      version: AI_CONSENT_VERSION,
+      purpose: AI_CONSENT_PURPOSE
+    });
+    return true;
   }
 });

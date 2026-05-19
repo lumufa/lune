@@ -1,3 +1,18 @@
+/* Reminders page — visual aligned to mobile (apps/mobile/app/reminder-settings.tsx). */
+/* Mobile px → miniapp rpx: ×2. 1px borders kept as 1rpx. */
+
+.reminder-screen {
+  padding: 32rpx 40rpx 120rpx;
+  gap: 32rpx;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 104rpx;
+}
+
 .lang-btn {
   min-width: 96rpx;
   min-height: 60rpx;
@@ -7,116 +22,144 @@
   font-weight: 600;
 }
 
-.hero-block {
-  padding: 0 4rpx 12rpx;
-}
-
-.time-value {
-  display: block;
-  margin-top: 12rpx;
-  color: var(--ink);
-  font-size: 64rpx;
-  line-height: 1.1;
-  font-weight: 700;
-  letter-spacing: -1rpx;
-}
-
-.setting-card {
-  padding: 8rpx 32rpx;
-}
-
-.setting-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20rpx;
-  padding: 26rpx 0;
-  border-bottom: 1rpx solid var(--line);
-}
-
-.setting-row:last-child {
-  border-bottom: none;
-}
-
-.field-label {
-  color: var(--ink);
-  font-size: 28rpx;
-  font-weight: 500;
-}
-
-.picker-field {
-  min-width: 160rpx;
-  padding: 14rpx 24rpx;
-  border-radius: 14rpx;
-  border: 1rpx solid var(--line);
+/* ── Cards (override global .card to match mobile) ── */
+.reminder-screen .card {
+  padding: 32rpx;
+  border-radius: 40rpx;
+  border: 1rpx solid var(--line-strong);
   background: var(--surface);
-  color: var(--ink);
-  font-size: 28rpx;
-  font-weight: 600;
-  text-align: center;
-}
-
-.reminder-panel {
-  padding: 8rpx 32rpx;
-}
-
-.reminder-item {
-  padding: 24rpx 0;
-  border-bottom: 1rpx solid var(--line);
-}
-
-.reminder-item:last-child {
-  border-bottom: none;
-}
-
-.reminder-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16rpx;
-}
-
-.reminder-left {
-  display: flex;
-  align-items: flex-start;
-  gap: 18rpx;
-  min-width: 0;
-  flex: 1;
-}
-
-.reminder-icon {
-  font-size: 36rpx;
-  line-height: 1.2;
-  flex-shrink: 0;
-}
-
-.reminder-copy {
-  flex: 1;
-  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 6rpx;
+  gap: 24rpx;
 }
 
-.reminder-title {
-  display: block;
+.card-title {
   color: var(--ink);
-  font-size: 30rpx;
-  font-weight: 600;
+  font-size: 34rpx;
+  font-weight: 700;
   line-height: 1.3;
 }
 
-.reminder-detail {
-  display: block;
+/* ── Quiet hours (start/end side by side) ── */
+.time-row {
+  display: flex;
+  flex-direction: row;
+  gap: 24rpx;
+}
+
+.time-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  min-width: 0;
+}
+
+.field-label {
   color: var(--muted);
   font-size: 24rpx;
-  line-height: 1.5;
+  font-weight: 600;
+}
+
+.time-input {
+  min-height: 96rpx;
+  line-height: 96rpx;
+  border-radius: 24rpx;
+  background: var(--chip-idle);
+  padding: 0 24rpx;
+  color: var(--ink);
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+/* ── Reminder items list ── */
+.item-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.item-row {
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid var(--divider);
+  display: flex;
+  flex-direction: column;
+  gap: 24rpx;
+}
+
+.item-row:first-child {
+  padding-top: 0;
+}
+
+.item-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+}
+
+.item-copy {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  min-width: 0;
+}
+
+.item-title {
+  color: var(--ink);
+  font-size: 32rpx;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.item-subtle {
+  color: var(--muted);
+  font-size: 24rpx;
+  font-weight: 500;
+}
+
+.inline-fields {
+  display: flex;
+  flex-direction: row;
+  gap: 24rpx;
+}
+
+.inline-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  min-width: 0;
+}
+
+/* ── Empty / save ── */
+.empty-state {
+  color: var(--muted);
+  font-size: 28rpx;
+  text-align: center;
+  padding: 48rpx 0;
 }
 
 .save-btn {
-  margin-top: 32rpx;
+  width: 100%;
+  min-height: 108rpx;
+  line-height: 108rpx;
+  border-radius: 32rpx;
+  background: var(--accent);
+  color: #FFFFFF;
+  font-size: 34rpx;
+  font-weight: 700;
+  text-align: center;
+  border: none;
+  padding: 0;
+  margin: 8rpx 0 0;
 }
 
-.back-btn {
-  margin-top: 16rpx;
+.save-btn::after {
+  border: none;
 }

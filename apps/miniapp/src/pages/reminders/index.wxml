@@ -1,52 +1,72 @@
-<view class="screen">
+<view class="screen reminder-screen">
   <view class="toolbar">
-    <text class="page-title">{{copy.heroTitlePrefix}}</text>
+    <text class="page-title">{{copy.title}}</text>
     <button class="ghost-btn lang-btn" size="mini" bindtap="toggleLanguage">{{copy.languageButtonLabel}}</button>
   </view>
 
-  <view class="hero-block" wx:if="{{preference}}">
-    <text class="hero-subtitle">{{copy.timePickerLabel}}</text>
-    <text class="time-value">{{preference.quietHours.start}} - {{preference.quietHours.end}}</text>
-  </view>
-
-  <view class="panel setting-card" wx:if="{{preference}}">
-    <view class="setting-row">
-      <text class="field-label">{{copy.quietStartLabel}}</text>
-      <picker mode="time" value="{{preference.quietHours.start}}" bindchange="changeQuietStart">
-        <view class="picker-field">{{preference.quietHours.start}}</view>
-      </picker>
-    </view>
-    <view class="setting-row">
-      <text class="field-label">{{copy.quietEndLabel}}</text>
-      <picker mode="time" value="{{preference.quietHours.end}}" bindchange="changeQuietEnd">
-        <view class="picker-field">{{preference.quietHours.end}}</view>
-      </picker>
-    </view>
-  </view>
-
-  <text class="section-title">{{copy.reminderSectionTitle}}</text>
-  <view class="panel reminder-panel" wx:if="{{preference}}">
-    <view class="reminder-item" wx:for="{{reminderViews}}" wx:key="type" data-type="{{item.type}}">
-      <view class="reminder-row">
-        <view class="reminder-left">
-          <text class="reminder-icon">{{item.icon}}</text>
-          <view class="reminder-copy">
-            <text class="reminder-title">{{item.label}}</text>
-            <text class="reminder-detail">{{item.detail}}</text>
-          </view>
-        </view>
-        <switch checked="{{item.enabled}}" bindchange="toggleItem" data-type="{{item.type}}" color="#FF5B8D" />
+  <view class="card quiet-card" wx:if="{{preference}}">
+    <text class="card-title">{{copy.quietTitle}}</text>
+    <view class="time-row">
+      <view class="time-field">
+        <text class="field-label">{{copy.quietStartLabel}}</text>
+        <picker mode="time" value="{{preference.quietHours.start}}" bindchange="changeQuietStart">
+          <view class="time-input">{{preference.quietHours.start}}</view>
+        </picker>
+      </view>
+      <view class="time-field">
+        <text class="field-label">{{copy.quietEndLabel}}</text>
+        <picker mode="time" value="{{preference.quietHours.end}}" bindchange="changeQuietEnd">
+          <view class="time-input">{{preference.quietHours.end}}</view>
+        </picker>
       </view>
     </view>
   </view>
-  <view class="panel empty-state" wx:else>
+
+  <view class="card item-card" wx:if="{{preference}}">
+    <text class="card-title">{{copy.reminderSectionTitle}}</text>
+    <view class="item-list">
+      <view class="item-row" wx:for="{{reminderViews}}" wx:key="type">
+        <view class="item-head">
+          <view class="item-copy">
+            <text class="item-title">{{item.label}}</text>
+            <text class="item-subtle">{{copy.currentTimeLabel}} {{item.time}}</text>
+          </view>
+          <switch checked="{{item.enabled}}" bindchange="toggleItem" data-type="{{item.type}}" color="#FF4D6A" />
+        </view>
+        <view class="inline-fields">
+          <view class="inline-field">
+            <text class="field-label">{{copy.leadDaysLabel}}</text>
+            <picker
+              mode="selector"
+              range="{{leadDaysOptions}}"
+              value="{{item.leadDaysIndex}}"
+              data-type="{{item.type}}"
+              bindchange="changeItemLeadDays"
+            >
+              <view class="time-input">{{item.leadDays}}</view>
+            </picker>
+          </view>
+          <view class="inline-field">
+            <text class="field-label">{{copy.timeLabel}}</text>
+            <picker
+              mode="time"
+              value="{{item.time}}"
+              data-type="{{item.type}}"
+              bindchange="changeItemTime"
+            >
+              <view class="time-input">{{item.time}}</view>
+            </picker>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card empty-state" wx:else>
     {{copy.loadFailed}}
   </view>
 
-  <button class="primary-btn save-btn" wx:if="{{preference}}" loading="{{isSaving}}" bindtap="savePreference">
+  <button class="save-btn" wx:if="{{preference}}" loading="{{isSaving}}" bindtap="savePreference">
     {{copy.saveLabel}}
-  </button>
-  <button class="ghost-btn back-btn" wx:if="{{preference}}" bindtap="backToCalendar">
-    {{copy.backToCalendarLabel}}
   </button>
 </view>

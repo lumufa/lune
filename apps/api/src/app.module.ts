@@ -1,4 +1,6 @@
 import { Module } from "@nestjs/common";
+import { AIInterpretationController } from "./modules/ai/ai-interpretation.controller";
+import { AIInterpretationService } from "./modules/ai/ai-interpretation.service";
 import { ConsentController } from "./modules/consent/consent.controller";
 import { ConsentService } from "./modules/consent/consent.service";
 import { CycleController } from "./modules/cycle/cycle.controller";
@@ -17,6 +19,7 @@ import { InMemoryStoreService } from "./store/in-memory-store.service";
   controllers: [
     HealthController,
     CycleController,
+    AIInterpretationController,
     ReminderController,
     ConsentController,
     PrivacyController,
@@ -25,6 +28,7 @@ import { InMemoryStoreService } from "./store/in-memory-store.service";
   providers: [
     InMemoryStoreService,
     CycleService,
+    AIInterpretationService,
     ReminderService,
     ConsentService,
     PrivacyService,

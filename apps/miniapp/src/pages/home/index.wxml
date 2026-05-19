@@ -1,10 +1,12 @@
 <view class="screen home-screen">
-  <view class="toolbar">
-    <image class="brand-avatar" src="/assets/haven-icon.png" mode="aspectFill" />
+  <view class="top-bar">
+    <view class="avatar-badge">
+      <image class="brand-avatar" src="/assets/haven-icon.png" mode="aspectFill" />
+    </view>
     <view class="date-block">
       <text class="date-text">{{todayLabel}}</text>
     </view>
-    <view class="calendar-btn" bindtap="openCalendar">
+    <view class="calendar-button" bindtap="openCalendar">
       <text class="calendar-icon">📅</text>
     </view>
   </view>
@@ -15,21 +17,19 @@
 
     <view class="ring-outer">
       <view class="ring-accent"></view>
-      <view class="ring-inner" wx:if="{{cycleDay > 0}}">
-        <text class="ring-value">{{cycleDay}}</text>
-        <text class="ring-caption">{{copy.dayUnit}}</text>
-      </view>
-      <view class="ring-inner" wx:else>
-        <text class="ring-caption">—</text>
+      <view class="ring-inner">
+        <block wx:if="{{hasCycleInfo}}">
+          <text class="ring-top-caption">{{copy.cycleDayLabel}}</text>
+          <text class="ring-value">{{cycleDay}}</text>
+          <text class="ring-sub {{isLate ? 'ring-sub-warn' : ''}}" wx:if="{{ringSubText}}">{{ringSubText}}</text>
+        </block>
+        <text class="empty-copy" wx:else>{{copy.emptyMessage}}</text>
       </view>
     </view>
 
-    <view class="hero-copy" wx:if="{{hasNextPeriod}}">
-      <text class="hero-value {{isLate ? 'hero-value-warning' : ''}}">{{daysUntilNext}} {{copy.dayUnit}}</text>
-      <text class="hero-subtle">{{copy.predictedDatePrefix}} {{predictedDate}}</text>
-    </view>
+    <text class="hero-subtle" wx:if="{{predictedDate}}">{{copy.predictedDatePrefix}}{{predictedDate}}</text>
 
-    <button class="primary-btn hero-btn {{todayRecordId ? 'secondary-hero-btn' : ''}}" bindtap="openLog">
+    <button class="hero-btn {{todayRecordId ? 'hero-btn-secondary' : ''}}" bindtap="openLog">
       {{todayRecordId ? copy.editTodayLog : copy.logToday}}
     </button>
   </view>
@@ -41,17 +41,34 @@
         <text class="summary-arrow">→</text>
       </view>
     </view>
-    <view class="summary-row summary-row-border">
-      <text class="summary-label">{{copy.averageCycle}}</text>
-      <text class="summary-value">{{averageCycleLength}} {{copy.dayUnit}}</text>
+    <view class="summary-grid">
+      <view class="summary-cell">
+        <text class="summary-cell-value">{{averageCycleLength}}</text>
+        <text class="summary-cell-unit">{{copy.dayUnit}}</text>
+        <text class="summary-cell-label">{{copy.averageCycle}}</text>
+      </view>
+      <view class="summary-cell">
+        <text class="summary-cell-value">{{averagePeriodLength}}</text>
+        <text class="summary-cell-unit">{{copy.dayUnit}}</text>
+        <text class="summary-cell-label">{{copy.averagePeriod}}</text>
+      </view>
+      <view class="summary-cell">
+        <text class="summary-cell-value">{{recordCount}}</text>
+        <text class="summary-cell-unit">{{copy.logCountUnit}}</text>
+        <text class="summary-cell-label">{{copy.logCount}}</text>
+      </view>
     </view>
-    <view class="summary-row summary-row-border">
-      <text class="summary-label">{{copy.averagePeriod}}</text>
-      <text class="summary-value">{{averagePeriodLength}} {{copy.dayUnit}}</text>
+  </view>
+
+  <view class="recent-card" wx:if="{{recentEntry}}" bindtap="openRecentLog">
+    <view class="recent-head">
+      <text class="recent-title">{{copy.recentEntryTitle}}</text>
+      <text class="recent-date">{{recentEntry.dateLabel}}</text>
     </view>
-    <view class="summary-row">
-      <text class="summary-label">{{copy.logCount}}</text>
-      <text class="summary-value">{{recordCount}} {{copy.logCountUnit}}</text>
+    <view class="recent-meta">
+      <view class="chip"><text class="chip-label">{{recentEntry.flowLabel}}</text></view>
+      <view class="chip"><text class="chip-label">{{recentEntry.moodLabel}}</text></view>
+      <view class="chip" wx:if="{{recentEntry.symptomsLabel}}"><text class="chip-label">{{recentEntry.symptomsLabel}}</text></view>
     </view>
   </view>
 </view>

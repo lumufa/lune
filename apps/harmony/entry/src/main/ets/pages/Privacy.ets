@@ -3,6 +3,7 @@ import promptAction from '@ohos.promptAction';
 import { api } from '../common/ApiClient';
 import { COLORS, FONT_SIZE, FONT_WEIGHT, RADII, SHADOWS, SPACING } from '../common/DesignTokens';
 import { ConsentRecord, ExportBundle, PrivacyAction } from '../common/Types';
+import { AppCopy, DEFAULT_LANGUAGE, LANGUAGE_KEY, PrivacyCopy, getCopy, getLanguageToggleLabel, getNextLanguage } from '../common/I18n';
 
 const CONSENT_TYPES: Array<string> = ['privacy_policy', 'sensitive_health_data', 'notifications'];
 
@@ -14,28 +15,37 @@ interface ToggleView {
   latestId: string;
 }
 
-function consentTitle(type: string): string {
-  if (type === 'privacy_policy') return 'Privacy policy';
-  if (type === 'sensitive_health_data') return 'Sensitive health data';
-  return 'Notifications';
+function consentTitle(type: string, copy: PrivacyCopy): string {
+  if (type === 'privacy_policy') return copy.consentPrivacy;
+  if (type === 'sensitive_health_data') return copy.consentSensitive;
+  return copy.consentNotifications;
 }
 
-function consentPurpose(type: string): string {
-  if (type === 'privacy_policy') return 'Accept privacy policy';
-  if (type === 'sensitive_health_data') return 'Allow sensitive health data processing';
-  return 'Enable reminder notifications';
+function consentPurpose(type: string, copy: PrivacyCopy): string {
+  if (type === 'privacy_policy') return copy.purposePrivacy;
+  if (type === 'sensitive_health_data') return copy.purposeSensitive;
+  return copy.purposeNotifications;
 }
 
-function actionTypeLabel(type: string): string {
-  if (type === 'export_data') return 'Export';
-  if (type === 'delete_account') return 'Delete';
-  if (type === 'logout') return 'Logout';
-  return 'Withdraw';
+function actionTypeLabel(type: string, copy: PrivacyCopy): string {
+  if (type === 'export_data') return copy.actionExport;
+  if (type === 'delete_account') return copy.actionDelete;
+  if (type === 'logout') return copy.actionLogout;
+  return copy.actionWithdraw;
 }
+
+function __initLangStorage(): string {
+  if (!AppStorage.Has(LANGUAGE_KEY)) {
+    AppStorage.SetOrCreate(LANGUAGE_KEY, DEFAULT_LANGUAGE);
+  }
+  return DEFAULT_LANGUAGE;
+}
+const __LANG_INIT: string = __initLangStorage();
 
 @Entry
 @Component
 struct Privacy {
+  @State private lang: string = 'en';
   @State private consents: Array<ConsentRecord> = [];
   @State private actions: Array<PrivacyAction> = [];
   @State private toggles: Array<ToggleView> = [];
@@ -44,23 +54,24 @@ struct Privacy {
   @State private isDeleting: boolean = false;
 
   aboutToAppear(): void {
-    this.loadData();
+    // loadData disabled for Previewer (http module unavailable)
   }
 
   private rebuildToggles(): void {
+    const copy = getCopy(this.lang).privacy;
     const result: Array<ToggleView> = [];
     for (const type of CONSENT_TYPES) {
       const matched = this.consents.filter((item: ConsentRecord) => item.type === type);
       const latest = matched.length ? matched[matched.length - 1] : null;
       const enabled = latest !== null && latest.status === 'granted';
-      let statusStr = 'Not granted';
+      let statusStr = copy.statusNone;
       if (latest) {
-        statusStr = latest.status === 'granted' ? 'Granted' : 'Withdrawn';
+        statusStr = latest.status === 'granted' ? copy.statusGranted : copy.statusWithdrawn;
       }
       result.push({
         type: type,
-        title: consentTitle(type),
-        subtitle: `Current status: ${statusStr}`,
+        title: consentTitle(type, copy),
+        subtitle: `${copy.statusPrefix}: ${statusStr}`,
         enabled: enabled,
         latestId: latest ? latest.id : ''
       });
@@ -76,7 +87,7 @@ struct Privacy {
       this.actions = actions;
       this.rebuildToggles();
     } catch (e) {
-      promptAction.showToast({ message: 'Load failed, please retry', duration: 2000 });
+      promptAction.showToast({ message: getCopy(this.lang).privacy.loadFailed, duration: 2000 });
     }
   }
 
@@ -88,14 +99,14 @@ struct Privacy {
         await api.grantConsent({
           type: type,
           version: 'v1.0.0',
-          purpose: consentPurpose(type)
+          purpose: consentPurpose(type, getCopy(this.lang).privacy)
         });
       } else if (latestId.length > 0) {
         await api.withdrawConsent(latestId);
       }
       await this.loadData();
     } catch (e) {
-      promptAction.showToast({ message: 'Action failed', duration: 2000 });
+      promptAction.showToast({ message: getCopy(this.lang).privacy.actionFailed, duration: 2000 });
     } finally {
       this.isToggling = false;
     }
@@ -107,65 +118,77 @@ struct Privacy {
       this.exportBundle = bundle;
       api.trackEvent('export_data', { recordCount: bundle.cycles.length }).catch(() => undefined);
     } catch (e) {
-      promptAction.showToast({ message: 'Export failed', duration: 2000 });
+      promptAction.showToast({ message: getCopy(this.lang).privacy.exportFailed, duration: 2000 });
     }
   }
 
   private async withdrawSensitive(): Promise<void> {
+    const copy = getCopy(this.lang).privacy;
     const granted = this.consents
       .filter((item: ConsentRecord) => item.type === 'sensitive_health_data' && item.status === 'granted')
       .slice(-1)[0];
     if (!granted) {
-      promptAction.showToast({ message: 'No active sensitive consent', duration: 2000 });
+      promptAction.showToast({ message: copy.withdrawMissing, duration: 2000 });
       return;
     }
     try {
       await api.withdrawConsent(granted.id);
       await this.loadData();
     } catch (e) {
-      promptAction.showToast({ message: 'Withdraw failed', duration: 2000 });
+      promptAction.showToast({ message: copy.withdrawFailed, duration: 2000 });
     }
   }
 
   private async deleteAccount(): Promise<void> {
     if (this.isDeleting) return;
     this.isDeleting = true;
+    const copy = getCopy(this.lang).privacy;
     try {
       await api.deleteAccount();
       this.consents = [];
       this.actions = [];
       this.exportBundle = null;
       this.rebuildToggles();
-      promptAction.showToast({ message: 'Account data cleared', duration: 2000 });
+      promptAction.showToast({ message: copy.deleted, duration: 2000 });
     } catch (e) {
-      promptAction.showToast({ message: 'Delete failed', duration: 2000 });
+      promptAction.showToast({ message: copy.deleteFailed, duration: 2000 });
     } finally {
       this.isDeleting = false;
     }
   }
 
-  @Builder private Header() {
+  @Builder private Header(copy: AppCopy) {
     Row() {
       Text('◀')
         .fontSize(18).fontColor(COLORS.ink)
         .width(44).height(44).textAlign(TextAlign.Center)
         .onClick(() => router.back())
-      Text('Privacy & data')
+      Text(copy.privacy.backTitle)
         .fontSize(FONT_SIZE.titleLarge).fontWeight(FONT_WEIGHT.bold)
         .fontColor(COLORS.ink).layoutWeight(1).textAlign(TextAlign.Center)
-      Row().width(44).height(44)
+      Text(getLanguageToggleLabel(this.lang))
+        .fontSize(FONT_SIZE.metaLabel)
+        .fontWeight(FONT_WEIGHT.semibold)
+        .fontColor(COLORS.accentDeep)
+        .textAlign(TextAlign.Center)
+        .width(44)
+        .height(32)
+        .borderRadius(16)
+        .backgroundColor(COLORS.pinkMist)
+        .onClick(() => {
+          this.lang = getNextLanguage(this.lang);
+          this.rebuildToggles();
+        })
     }
     .width('100%')
     .padding({ left: SPACING.md, right: SPACING.md })
   }
 
-  @Builder private HeroCard() {
-    Column({ space: 6 }) {
-      Text('Control stays in your hands.')
+  @Builder private HeroCard(copy: AppCopy) {
+    Column() {
+      Text(copy.privacy.heroTitle)
         .fontSize(FONT_SIZE.titleLarge).fontWeight(FONT_WEIGHT.bold)
         .fontColor(COLORS.ink).width('100%')
-      Text('Sensitive data, sync, and exports in one place.')
-        .fontSize(FONT_SIZE.metaLabel).fontColor(COLORS.inkSecondary).width('100%')
     }
     .width('100%')
     .padding(SPACING.md)
@@ -174,9 +197,9 @@ struct Privacy {
     .border({ width: 1, color: COLORS.pinkBorder })
   }
 
-  @Builder private ToggleSection() {
+  @Builder private ToggleSection(copy: AppCopy) {
     Column({ space: SPACING.sm }) {
-      Text('Authorization switches')
+      Text(copy.privacy.togglesTitle)
         .fontSize(FONT_SIZE.subheading).fontWeight(FONT_WEIGHT.bold).fontColor(COLORS.ink).width('100%')
 
       Column() {
@@ -214,14 +237,14 @@ struct Privacy {
     })
   }
 
-  @Builder private ExportSection() {
+  @Builder private ExportSection(copy: AppCopy) {
     Column({ space: SPACING.sm }) {
-      Text('Data export')
+      Text(copy.privacy.exportTitle)
         .fontSize(FONT_SIZE.subheading).fontWeight(FONT_WEIGHT.bold).fontColor(COLORS.ink).width('100%')
-      Text('Download your records, reminders, and consent log.')
-        .fontSize(FONT_SIZE.metaLabel).fontColor(COLORS.inkBody).width('100%')
+      Text(copy.privacy.exportBody)
+        .fontSize(FONT_SIZE.metaLabel).fontColor(COLORS.textBody).width('100%')
 
-      Button('Export / Access Log')
+      Button(copy.privacy.exportButton)
         .width('100%')
         .height(48)
         .backgroundColor(COLORS.ink)
@@ -233,11 +256,11 @@ struct Privacy {
 
       if (this.exportBundle) {
         Column({ space: 2 }) {
-          Text('Export preview')
+          Text(copy.privacy.previewTitle)
             .fontSize(FONT_SIZE.metaLabel).fontWeight(FONT_WEIGHT.bold).fontColor(COLORS.ink).width('100%')
-          Text(`Generated at: ${this.exportBundle.exportedAt.slice(0, 16)}`)
+          Text(`${copy.privacy.previewAt}${this.exportBundle.exportedAt.slice(0, 16)}`)
             .fontSize(FONT_SIZE.footnote).fontColor(COLORS.inkSecondary).width('100%')
-          Text(`${this.exportBundle.cycles.length} records`)
+          Text(`${this.exportBundle.cycles.length} ${copy.privacy.previewUnit}`)
             .fontSize(FONT_SIZE.footnote).fontColor(COLORS.inkSecondary).width('100%')
         }
         .width('100%')
@@ -253,13 +276,13 @@ struct Privacy {
     .border({ width: 1, color: COLORS.lineStrong })
   }
 
-  @Builder private DangerSection() {
+  @Builder private DangerSection(copy: AppCopy) {
     Column({ space: SPACING.sm }) {
-      Text('Sensitive actions')
+      Text(copy.privacy.sensitiveTitle)
         .fontSize(FONT_SIZE.subheading).fontWeight(FONT_WEIGHT.bold).fontColor(COLORS.ink).width('100%')
 
       Row({ space: SPACING.sm }) {
-        Button('Withdraw sensitive')
+        Button(copy.privacy.withdrawLabel)
           .layoutWeight(1)
           .height(44)
           .backgroundColor(COLORS.surface)
@@ -270,7 +293,7 @@ struct Privacy {
           .border({ width: 1, color: COLORS.lineStrong })
           .onClick(() => this.withdrawSensitive())
 
-        Button('Delete account')
+        Button(copy.privacy.deleteLabel)
           .layoutWeight(1)
           .height(44)
           .backgroundColor(COLORS.pinkMist)
@@ -292,16 +315,16 @@ struct Privacy {
     .border({ width: 1, color: COLORS.lineStrong })
   }
 
-  @Builder private ActionSection() {
+  @Builder private ActionSection(copy: AppCopy) {
     Column({ space: SPACING.sm }) {
-      Text('Recent actions')
+      Text(copy.privacy.actionsTitle)
         .fontSize(FONT_SIZE.subheading).fontWeight(FONT_WEIGHT.bold).fontColor(COLORS.ink).width('100%')
 
       if (this.actions.length > 0) {
         Column() {
           ForEach(this.actions, (item: PrivacyAction, index: number) => {
             Row() {
-              Text(actionTypeLabel(item.type))
+              Text(actionTypeLabel(item.type, copy.privacy))
                 .fontSize(FONT_SIZE.metaLabel).fontWeight(FONT_WEIGHT.semibold).fontColor(COLORS.ink)
                 .layoutWeight(1)
               Text(item.requestedAt.slice(0, 16))
@@ -316,8 +339,8 @@ struct Privacy {
         }
         .width('100%')
       } else {
-        Text('No action records yet')
-          .fontSize(FONT_SIZE.metaLabel).fontColor(COLORS.inkBody).width('100%')
+        Text(copy.privacy.actionsEmpty)
+          .fontSize(FONT_SIZE.metaLabel).fontColor(COLORS.textBody).width('100%')
       }
     }
     .width('100%')
@@ -329,15 +352,15 @@ struct Privacy {
 
   build() {
     Column() {
-      this.Header()
+      this.Header(getCopy(this.lang))
 
       Scroll() {
         Column({ space: SPACING.md }) {
-          this.HeroCard()
-          this.ToggleSection()
-          this.ExportSection()
-          this.DangerSection()
-          this.ActionSection()
+          this.HeroCard(getCopy(this.lang))
+          this.ToggleSection(getCopy(this.lang))
+          this.ExportSection(getCopy(this.lang))
+          this.DangerSection(getCopy(this.lang))
+          this.ActionSection(getCopy(this.lang))
         }
         .width('100%')
         .padding({ left: SPACING.md, right: SPACING.md, top: SPACING.sm, bottom: SPACING.xl })

@@ -18,6 +18,21 @@ export class ConsentService {
   }
 
   grantConsent(userId: string, payload: GrantConsentPayload): ConsentRecord {
+    const consents = this.store.listConsents(userId);
+    const existingActive = consents.find(
+      (record) => record.type === payload.type && record.status === "granted"
+    );
+
+    if (existingActive && existingActive.version === payload.version) {
+      return existingActive;
+    }
+
+    if (existingActive) {
+      const withdrawnAt = new Date().toISOString();
+      const idx = consents.findIndex((record) => record.id === existingActive.id);
+      consents[idx] = { ...existingActive, status: "withdrawn", withdrawnAt };
+    }
+
     const record: ConsentRecord = {
       id: randomUUID(),
       userId,
@@ -27,7 +42,6 @@ export class ConsentService {
       status: "granted",
       grantedAt: new Date().toISOString()
     };
-    const consents = this.store.listConsents(userId);
     consents.push(record);
     this.store.saveConsents(userId, consents);
     return record;

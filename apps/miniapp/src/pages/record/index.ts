@@ -50,6 +50,13 @@ interface PageCopy {
   deleteFailed: string;
   loadRecordFailed: string;
   networkUnavailable: string;
+  cancelLabel: string;
+  confirmLabel: string;
+  startDateTitle: string;
+  endDateTitle: string;
+  yearUnit: string;
+  monthUnit: string;
+  dayOfMonthUnit: string;
 }
 
 function buildCopy(language: DisplayLanguage): PageCopy {
@@ -78,8 +85,41 @@ function buildCopy(language: DisplayLanguage): PageCopy {
     deleteSuccess: language === "en" ? "Deleted" : "已删除",
     deleteFailed: language === "en" ? "Delete failed" : "删除失败",
     loadRecordFailed: language === "en" ? "Failed to load" : "加载失败",
-    networkUnavailable: language === "en" ? "API offline" : "接口未连接"
+    networkUnavailable: language === "en" ? "API offline" : "接口未连接",
+    cancelLabel: language === "en" ? "Cancel" : "取消",
+    confirmLabel: language === "en" ? "Done" : "确认",
+    startDateTitle: language === "en" ? "Start date" : "开始日期",
+    endDateTitle: language === "en" ? "End date" : "结束日期",
+    yearUnit: language === "en" ? "" : "年",
+    monthUnit: language === "en" ? "" : "月",
+    dayOfMonthUnit: language === "en" ? "" : "日"
   };
+}
+
+const CURRENT_YEAR = new Date().getFullYear();
+const YEAR_MIN = CURRENT_YEAR - 10;
+const YEAR_MAX = CURRENT_YEAR + 2;
+
+function rangeInclusive(start: number, end: number): number[] {
+  const list: number[] = [];
+  for (let v = start; v <= end; v++) list.push(v);
+  return list;
+}
+
+function daysInMonth(year: number, month: number): number {
+  return new Date(year, month, 0).getDate();
+}
+
+function parseDatePart(value: string): { year: number; month: number; day: number } {
+  const parts = value.split("-");
+  const year = Number(parts[0]) || CURRENT_YEAR;
+  const month = Number(parts[1]) || 1;
+  const day = Number(parts[2]) || 1;
+  return { year, month, day };
+}
+
+function formatDateParts(year: number, month: number, day: number): string {
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 function buildPainHints(language: DisplayLanguage): string[] {
@@ -130,7 +170,13 @@ Page({
     note: "",
     isEditMode: false,
     editingRecordId: "",
-    isSubmitting: false
+    isSubmitting: false,
+    pickerVisible: false,
+    pickerTarget: "start" as "start" | "end",
+    pickerYears: rangeInclusive(YEAR_MIN, YEAR_MAX),
+    pickerMonths: rangeInclusive(1, 12),
+    pickerDays: rangeInclusive(1, 31),
+    pickerIndex: [0, 0, 0] as number[]
   },
 
   onLoad(options: Record<string, string | undefined>) {
@@ -189,13 +235,84 @@ Page({
     }
   },
 
-  changeStartDatePart(event: WechatMiniprogram.CustomEvent<{ value: string }>) {
-    this.setData({ startDatePart: event.detail.value });
+  openDatePicker(event: WechatMiniprogram.BaseEvent) {
+    const target = (event.currentTarget.dataset.target as "start" | "end") ?? "start";
+    const source = target === "start" ? this.data.startDatePart : this.data.endDatePart;
+    const { year, month, day } = parseDatePart(source);
+    const years = rangeInclusive(YEAR_MIN, YEAR_MAX);
+    const dim = daysInMonth(year, month);
+    const clampedYearIdx = Math.max(0, years.indexOf(year));
+    const clampedDay = Math.min(Math.max(day, 1), dim);
+    const initialIndex: [number, number, number] = [clampedYearIdx, month - 1, clampedDay - 1];
+    (this as unknown as { _liveIndex: [number, number, number] })._liveIndex = [...initialIndex] as [number, number, number];
+    (this as unknown as { _liveDim: number })._liveDim = dim;
+    this.setData({
+      pickerVisible: true,
+      pickerTarget: target,
+      pickerYears: years,
+      pickerMonths: rangeInclusive(1, 12),
+      pickerDays: rangeInclusive(1, dim),
+      pickerIndex: initialIndex
+    });
   },
 
-  changeEndDatePart(event: WechatMiniprogram.CustomEvent<{ value: string }>) {
-    this.setData({ endDatePart: event.detail.value });
+  onDatePickerChange(event: WechatMiniprogram.CustomEvent<{ value: number[] }>) {
+    const value = event.detail.value;
+    const self = this as unknown as { _liveIndex: [number, number, number]; _liveDim: number };
+    const prev = self._liveIndex ?? [0, 0, 0];
+    const years = this.data.pickerYears;
+    const months = this.data.pickerMonths;
+    const year = years[value[0]] ?? years[0];
+    const month = months[value[1]] ?? 1;
+    const monthOrYearChanged = value[0] !== prev[0] || value[1] !== prev[1];
+    self._liveIndex = [value[0], value[1], value[2]] as [number, number, number];
+
+    if (!monthOrYearChanged) return;
+
+    const dim = daysInMonth(year, month);
+    if (dim === self._liveDim && value[2] < dim) return;
+
+    self._liveDim = dim;
+    if (value[2] >= dim) {
+      const clampedDayIdx = dim - 1;
+      self._liveIndex = [value[0], value[1], clampedDayIdx] as [number, number, number];
+      this.setData({
+        pickerDays: rangeInclusive(1, dim),
+        pickerIndex: [value[0], value[1], clampedDayIdx]
+      });
+    } else {
+      this.setData({
+        pickerDays: rangeInclusive(1, dim)
+      });
+    }
   },
+
+  cancelDatePicker() {
+    this.setData({ pickerVisible: false });
+  },
+
+  confirmDatePicker() {
+    const live = (this as unknown as { _liveIndex?: [number, number, number] })._liveIndex
+      ?? (this.data.pickerIndex as [number, number, number]);
+    const [yi, mi, di] = live;
+    const year = this.data.pickerYears[yi];
+    const month = this.data.pickerMonths[mi];
+    const day = this.data.pickerDays[di];
+    if (year === undefined || month === undefined || day === undefined) {
+      this.setData({ pickerVisible: false });
+      return;
+    }
+    const result = formatDateParts(year, month, day);
+    const update: Record<string, unknown> = { pickerVisible: false };
+    if (this.data.pickerTarget === "start") {
+      update.startDatePart = result;
+    } else {
+      update.endDatePart = result;
+    }
+    this.setData(update);
+  },
+
+  noop() {},
 
   selectFlow(event: WechatMiniprogram.BaseEvent) {
     this.setData({ flowLevel: event.currentTarget.dataset.value as FlowLevel });

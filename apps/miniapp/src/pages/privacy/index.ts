@@ -2,30 +2,23 @@ import type { ConsentType } from "@women-period/shared";
 import type { ConsentRecordResponse, ExportBundle, PrivacyActionResponse } from "../../types";
 import { api, isApiNetworkError } from "../../services/api";
 import {
-  getConsentStatusLabel,
   getConsentTypeLabel,
   getDisplayLanguageToggleLabel,
   getNextDisplayLanguage,
-  getPrivacyActionStatusLabel,
   getPrivacyActionTypeLabel,
   getStoredDisplayLanguage,
   setStoredDisplayLanguage,
   type DisplayLanguage
 } from "../../utils/i18n";
 
-const DATA_SYNC_STORAGE_KEY = "privacy-data-sync-enabled";
 const CONSENT_ITEM_ORDER: ConsentType[] = ["privacy_policy", "sensitive_health_data", "notifications"];
 
 interface PrivacyCopy {
   languageButtonLabel: string;
   heroEyebrow: string;
-  heroTitle: string;
-  heroSubtitle: string;
   settingsSectionTitle: string;
-  statusLabel: string;
-  reminderShortcutTitle: string;
-  reminderShortcutSubtitle: string;
-  reminderShortcutButton: string;
+  exportSectionTitle: string;
+  dangerSectionTitle: string;
   accessLogLabel: string;
   withdrawLabel: string;
   deleteLabel: string;
@@ -42,15 +35,16 @@ interface PrivacyCopy {
   withdrawMissing: string;
   withdrawFailed: string;
   deleteFailed: string;
+  deleteConfirmTitle: string;
+  deleteConfirmContent: string;
   deleteModalTitle: string;
   deleteModalContent: string;
   networkUnavailable: string;
 }
 
 interface SettingToggleView {
-  type: ConsentType | "data_sync";
+  type: ConsentType;
   title: string;
-  subtitle: string;
   enabled: boolean;
 }
 
@@ -63,18 +57,12 @@ interface ActionView {
 function buildCopy(language: DisplayLanguage): PrivacyCopy {
   return {
     languageButtonLabel: getDisplayLanguageToggleLabel(language),
-    heroEyebrow: language === "en" ? "Privacy & Settings" : "隐私与设置",
-    heroTitle: language === "en" ? "Control stays in your hands." : "你的数据，由你控制。",
-    heroSubtitle:
-      language === "en" ? "Sensitive data, sync, and exports in one place." : "敏感数据、同步与导出都集中在这里。",
+    heroEyebrow: language === "en" ? "Privacy & data" : "隐私与数据",
     settingsSectionTitle: language === "en" ? "Authorization switches" : "授权开关",
-    statusLabel: language === "en" ? "Current status" : "当前状态",
-    reminderShortcutTitle: language === "en" ? "Reminder center" : "提醒中心",
-    reminderShortcutSubtitle:
-      language === "en" ? "Quiet hours and reminder items are managed here." : "免打扰时间和提醒项目在这里管理。",
-    reminderShortcutButton: language === "en" ? "Open reminder settings" : "打开提醒设置",
+    exportSectionTitle: language === "en" ? "Data export" : "数据导出",
+    dangerSectionTitle: language === "en" ? "Sensitive actions" : "危险操作",
     accessLogLabel: language === "en" ? "Export / Access Log" : "导出 / 访问日志",
-    withdrawLabel: language === "en" ? "Withdraw sensitive consent" : "撤回敏感授权",
+    withdrawLabel: language === "en" ? "Withdraw sensitive" : "撤回敏感授权",
     deleteLabel: language === "en" ? "Delete account" : "删除账号",
     exportPreviewTitle: language === "en" ? "Export preview" : "导出预览",
     exportPreviewPrefix: language === "en" ? "Generated at" : "生成时间",
@@ -89,6 +77,9 @@ function buildCopy(language: DisplayLanguage): PrivacyCopy {
     withdrawMissing: language === "en" ? "No active consent to withdraw" : "当前没有可撤回授权",
     withdrawFailed: language === "en" ? "Withdraw failed" : "撤回失败",
     deleteFailed: language === "en" ? "Delete failed" : "删除失败",
+    deleteConfirmTitle: language === "en" ? "Delete account" : "删除账号",
+    deleteConfirmContent:
+      language === "en" ? "This clears all current user data." : "这会清除当前用户的全部数据。",
     deleteModalTitle: language === "en" ? "Account deleted" : "账号已删除",
     deleteModalContent:
       language === "en"
@@ -97,23 +88,6 @@ function buildCopy(language: DisplayLanguage): PrivacyCopy {
     networkUnavailable:
       language === "en" ? "API offline. Run npm.cmd run start:api." : "接口未连接，请先执行 npm.cmd run start:api"
   };
-}
-
-function getDataSyncEnabled(): boolean {
-  try {
-    const value = wx.getStorageSync(DATA_SYNC_STORAGE_KEY);
-    return value !== false;
-  } catch {
-    return true;
-  }
-}
-
-function setDataSyncEnabled(enabled: boolean): void {
-  try {
-    wx.setStorageSync(DATA_SYNC_STORAGE_KEY, enabled);
-  } catch {
-    // ignore
-  }
 }
 
 function latestConsentByType(
@@ -129,38 +103,24 @@ function latestConsentByType(
 
 function buildSettingViews(
   consents: ConsentRecordResponse[],
-  language: DisplayLanguage,
-  statusLabel: string,
-  dataSyncEnabled: boolean
+  language: DisplayLanguage
 ): SettingToggleView[] {
-  const consentItems = CONSENT_ITEM_ORDER.map((type) => {
+  return CONSENT_ITEM_ORDER.map((type) => {
     const latest = latestConsentByType(consents, type);
     const enabled = latest?.status === "granted";
-    const status = latest ? getConsentStatusLabel(latest.status, language) : language === "en" ? "Not granted" : "未授权";
-
     return {
       type,
       title: getConsentTypeLabel(type, language),
-      subtitle: `${statusLabel}: ${status}`,
       enabled
     };
   });
-
-  const dataSyncItem: SettingToggleView = {
-    type: "data_sync",
-    title: language === "en" ? "Data Sync" : "数据同步",
-    subtitle: `${statusLabel}: ${dataSyncEnabled ? (language === "en" ? "Enabled" : "已开启") : language === "en" ? "Disabled" : "已关闭"}`,
-    enabled: dataSyncEnabled
-  };
-
-  return [...consentItems, dataSyncItem];
 }
 
 function buildActionViews(actions: PrivacyActionResponse[], language: DisplayLanguage): ActionView[] {
   return actions.map((item) => ({
     id: item.id,
     typeLabel: getPrivacyActionTypeLabel(item.type, language),
-    metaLabel: `${getPrivacyActionStatusLabel(item.status, language)} · ${item.requestedAt.slice(0, 16)}`
+    metaLabel: item.requestedAt.slice(0, 16)
   }));
 }
 
@@ -209,11 +169,10 @@ Page({
 
   applyLanguage(language: DisplayLanguage) {
     const copy = buildCopy(language);
-    const dataSyncEnabled = getDataSyncEnabled();
     this.setData({
       language,
       copy,
-      settingViews: buildSettingViews(this.data.consents, language, copy.statusLabel, dataSyncEnabled),
+      settingViews: buildSettingViews(this.data.consents, language),
       actionViews: buildActionViews(this.data.actions, language)
     });
   },
@@ -228,12 +187,11 @@ Page({
     try {
       const [consents, actions] = await Promise.all([api.listConsents(), api.listPrivacyActions()]);
       const language = this.data.language as DisplayLanguage;
-      const copy = this.data.copy as PrivacyCopy;
 
       this.setData({
         consents,
         actions,
-        settingViews: buildSettingViews(consents, language, copy.statusLabel, getDataSyncEnabled()),
+        settingViews: buildSettingViews(consents, language),
         actionViews: buildActionViews(actions, language)
       });
     } catch (error) {
@@ -245,27 +203,10 @@ Page({
   },
 
   async toggleSetting(event: WechatMiniprogram.CustomEvent<{ value: boolean }>) {
-    const type = event.currentTarget.dataset.type as ConsentType | "data_sync" | undefined;
+    const type = event.currentTarget.dataset.type as ConsentType | undefined;
     const enabled = Boolean(event.detail.value);
 
     if (!type || this.data.isToggling) {
-      return;
-    }
-
-    if (type === "data_sync") {
-      setDataSyncEnabled(enabled);
-      this.setData({
-        settingViews: buildSettingViews(
-          this.data.consents,
-          this.data.language as DisplayLanguage,
-          this.data.copy.statusLabel,
-          enabled
-        )
-      });
-      wx.showToast({
-        title: this.data.copy.settingUpdated,
-        icon: "success"
-      });
       return;
     }
 
@@ -302,12 +243,6 @@ Page({
     } finally {
       this.setData({ isToggling: false });
     }
-  },
-
-  openReminderSettings() {
-    wx.switchTab({
-      url: "/pages/reminders/index"
-    });
   },
 
   async exportData() {
@@ -364,6 +299,18 @@ Page({
     if (this.data.isDeleting) {
       return;
     }
+
+    const confirmed = await new Promise<boolean>((resolve) => {
+      wx.showModal({
+        title: this.data.copy.deleteConfirmTitle,
+        content: this.data.copy.deleteConfirmContent,
+        confirmColor: "#D14060",
+        success: (result) => resolve(Boolean(result.confirm)),
+        fail: () => resolve(false)
+      });
+    });
+
+    if (!confirmed) return;
 
     this.setData({ isDeleting: true });
 

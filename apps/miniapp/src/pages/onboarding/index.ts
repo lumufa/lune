@@ -112,7 +112,7 @@ Page({
 
   onShow() {
     if (isAlreadyOnboarded()) {
-      wx.switchTab({ url: "/pages/calendar/index" });
+      wx.switchTab({ url: "/pages/home/index" });
       return;
     }
     const language = getStoredDisplayLanguage();
@@ -173,7 +173,7 @@ Page({
       ]);
       markOnboarded();
       void api.trackEvent("onboarding_complete").catch(() => undefined);
-      wx.switchTab({ url: "/pages/calendar/index" });
+      wx.switchTab({ url: "/pages/home/index" });
     } catch (error) {
       if (isApiNetworkError(error)) {
         wx.showModal({

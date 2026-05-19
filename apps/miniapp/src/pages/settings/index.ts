@@ -1,30 +1,24 @@
-import type { ReminderPreferenceItem, ReminderType } from "@women-period/shared";
+import type { ReminderPreferenceItem } from "@women-period/shared";
 import type { ReminderPreferenceResponse } from "../../types";
 import { api, isApiNetworkError } from "../../services/api";
 import {
-  getReminderTypeLabel,
   getStoredDisplayLanguage,
   type DisplayLanguage
 } from "../../utils/i18n";
 
-const CYCLE_LENGTH_KEY = "settings-cycle-length";
-const PERIOD_LENGTH_KEY = "settings-period-length";
-const CYCLE_MIN = 20;
-const CYCLE_MAX = 45;
-const PERIOD_MIN = 2;
-const PERIOD_MAX = 10;
-
 interface SettingsCopy {
   title: string;
-  cycleParamSection: string;
   cycleLengthLabel: string;
   periodLengthLabel: string;
-  reminderSection: string;
-  leadDaysLabel: string;
-  dayBefore: string;
-  quietHoursLabel: string;
-  privacySection: string;
-  privacyBody: string;
+  pendingHint: string;
+  dayUnit: string;
+  autoBadgePrefix: string;
+  autoBadgeSuffix: string;
+  trendsTitle: string;
+  trendsBody: string;
+  reminderSummaryTitle: string;
+  reminderSummaryEmpty: string;
+  privacyTitle: string;
   exportLabel: string;
   deleteLabel: string;
   networkError: string;
@@ -35,23 +29,30 @@ interface SettingsCopy {
   deleted: string;
 }
 
+const AUTO_COMPUTE_THRESHOLD = 3;
+
 function buildCopy(language: DisplayLanguage): SettingsCopy {
   return {
     title: language === "en" ? "Settings" : "设置",
-    cycleParamSection: language === "en" ? "CYCLE PARAMETERS" : "周期参数",
-    cycleLengthLabel: language === "en" ? "Cycle length" : "周期长度",
-    periodLengthLabel: language === "en" ? "Period length" : "经期长度",
-    reminderSection: language === "en" ? "REMINDERS" : "提醒",
-    leadDaysLabel: language === "en" ? "Remind in advance" : "提前提醒",
-    dayBefore: language === "en" ? "d" : "天前",
-    quietHoursLabel: language === "en" ? "Quiet hours" : "免打扰时段",
-    privacySection: language === "en" ? "PRIVACY & DATA" : "隐私与数据",
-    privacyBody:
+    cycleLengthLabel: language === "en" ? "Average cycle length" : "平均周期长度",
+    periodLengthLabel: language === "en" ? "Average period length" : "平均经期长度",
+    pendingHint:
       language === "en"
-        ? "Your data stays under the current account."
-        : "数据仅在当前账号下维护。",
+        ? `Auto-computed once you have ${AUTO_COMPUTE_THRESHOLD}+ records`
+        : `记录满 ${AUTO_COMPUTE_THRESHOLD} 条后将自动计算`,
+    dayUnit: language === "en" ? "days" : "天",
+    autoBadgePrefix: language === "en" ? "Auto-computed from your " : "基于你的 ",
+    autoBadgeSuffix: language === "en" ? " records" : " 条记录自动计算",
+    trendsTitle: language === "en" ? "Trends" : "趋势分析",
+    trendsBody:
+      language === "en"
+        ? "View cycle length, period duration and symptom trends."
+        : "查看周期长度、经期时长与症状趋势。",
+    reminderSummaryTitle: language === "en" ? "Reminders & quiet hours" : "提醒和免打扰",
+    reminderSummaryEmpty: language === "en" ? "Loading reminder settings..." : "正在加载提醒设置…",
+    privacyTitle: language === "en" ? "Privacy & data" : "隐私与数据",
     exportLabel: language === "en" ? "Export data" : "导出数据",
-    deleteLabel: language === "en" ? "Delete all data" : "删除所有数据",
+    deleteLabel: language === "en" ? "Delete account" : "删除账号",
     networkError: language === "en" ? "API offline" : "接口未连接",
     exportFailed: language === "en" ? "Export failed" : "导出失败",
     deleteFailed: language === "en" ? "Delete failed" : "删除失败",
@@ -64,64 +65,29 @@ function buildCopy(language: DisplayLanguage): SettingsCopy {
   };
 }
 
-interface ReminderItemView {
-  type: ReminderType;
-  label: string;
-  detail: string;
-  enabled: boolean;
-}
-
-function buildReminderDetail(item: ReminderPreferenceItem, language: DisplayLanguage): string {
-  if (language === "en") return `${item.leadDays}d ahead · ${item.time}`;
-  return `提前${item.leadDays}天 · ${item.time}`;
-}
-
-function buildReminderViews(items: ReminderPreferenceItem[], language: DisplayLanguage): ReminderItemView[] {
-  return items.map((item) => ({
-    type: item.type,
-    enabled: item.enabled,
-    label: getReminderTypeLabel(item.type, language),
-    detail: buildReminderDetail(item, language)
-  }));
-}
-
-function getStoredCycleLength(): number {
-  try {
-    const stored = wx.getStorageSync(CYCLE_LENGTH_KEY);
-    const value = Number(stored);
-    return value >= CYCLE_MIN && value <= CYCLE_MAX ? value : 28;
-  } catch { return 28; }
-}
-
-function getStoredPeriodLength(): number {
-  try {
-    const stored = wx.getStorageSync(PERIOD_LENGTH_KEY);
-    const value = Number(stored);
-    return value >= PERIOD_MIN && value <= PERIOD_MAX ? value : 5;
-  } catch { return 5; }
-}
-
-function saveCycleLength(value: number): void {
-  try { wx.setStorageSync(CYCLE_LENGTH_KEY, value); } catch { /* ignore */ }
-}
-
-function savePeriodLength(value: number): void {
-  try { wx.setStorageSync(PERIOD_LENGTH_KEY, value); } catch { /* ignore */ }
+function buildReminderSummary(
+  preference: ReminderPreferenceResponse | null,
+  language: DisplayLanguage,
+  emptyText: string
+): string {
+  if (!preference) return emptyText;
+  const enabledCount = preference.items.filter((i: ReminderPreferenceItem) => i.enabled).length;
+  const quietRange = `${preference.quietHours.start} - ${preference.quietHours.end}`;
+  return language === "en"
+    ? `${enabledCount} reminders enabled, quiet hours ${quietRange}`
+    : `已开启 ${enabledCount} 项提醒，免打扰时段 ${quietRange}`;
 }
 
 Page({
   data: {
     language: getStoredDisplayLanguage() as DisplayLanguage,
     copy: buildCopy(getStoredDisplayLanguage()),
-    cycleLength: getStoredCycleLength(),
-    periodLength: getStoredPeriodLength(),
+    cycleLength: 0,
+    periodLength: 0,
+    recordCount: 0,
+    isAutoComputed: false,
     preference: null as ReminderPreferenceResponse | null,
-    hasPreference: false,
-    reminderViews: [] as ReminderItemView[],
-    anyReminderEnabled: false,
-    leadDays: 2,
-    quietStart: "22:00",
-    quietEnd: "08:00"
+    reminderSummaryText: buildCopy(getStoredDisplayLanguage()).reminderSummaryEmpty
   },
 
   onShow() {
@@ -134,49 +100,26 @@ Page({
   },
 
   applyLanguage(language: DisplayLanguage) {
-    this.setData({ language, copy: buildCopy(language) });
-    if (this.data.preference) {
-      this.setData({
-        reminderViews: buildReminderViews(this.data.preference.items, language)
-      });
-    }
-  },
-
-  decreaseCycle() {
-    const next = Math.max(CYCLE_MIN, this.data.cycleLength - 1);
-    this.setData({ cycleLength: next });
-    saveCycleLength(next);
-  },
-
-  increaseCycle() {
-    const next = Math.min(CYCLE_MAX, this.data.cycleLength + 1);
-    this.setData({ cycleLength: next });
-    saveCycleLength(next);
-  },
-
-  decreasePeriod() {
-    const next = Math.max(PERIOD_MIN, this.data.periodLength - 1);
-    this.setData({ periodLength: next });
-    savePeriodLength(next);
-  },
-
-  increasePeriod() {
-    const next = Math.min(PERIOD_MAX, this.data.periodLength + 1);
-    this.setData({ periodLength: next });
-    savePeriodLength(next);
+    const copy = buildCopy(language);
+    this.setData({
+      language,
+      copy,
+      reminderSummaryText: buildReminderSummary(this.data.preference, language, copy.reminderSummaryEmpty)
+    });
   },
 
   async loadDashboardSync() {
     try {
       const dashboard = await api.getDashboard();
       const summary = dashboard.summary;
-      if (summary) {
-        const cycleLength = summary.averageCycleLength || this.data.cycleLength;
-        const periodLength = summary.averagePeriodLength || this.data.periodLength;
-        this.setData({ cycleLength, periodLength });
-        saveCycleLength(cycleLength);
-        savePeriodLength(periodLength);
-      }
+      const recordCount = summary?.recordCount ?? dashboard.records?.length ?? 0;
+      const isAutoComputed = recordCount >= AUTO_COMPUTE_THRESHOLD;
+      this.setData({
+        cycleLength: isAutoComputed ? summary!.averageCycleLength : 0,
+        periodLength: isAutoComputed ? summary!.averagePeriodLength : 0,
+        recordCount,
+        isAutoComputed
+      });
     } catch { /* silent */ }
   },
 
@@ -184,82 +127,23 @@ Page({
     try {
       const preference = await api.getReminderPreferences();
       const language = this.data.language as DisplayLanguage;
-      const periodDue = preference.items.find((i: ReminderPreferenceItem) => i.type === "period_due");
-      const anyEnabled = preference.items.some((i: ReminderPreferenceItem) => i.enabled);
       this.setData({
         preference,
-        hasPreference: true,
-        reminderViews: buildReminderViews(preference.items, language),
-        anyReminderEnabled: anyEnabled,
-        leadDays: periodDue?.leadDays ?? 2,
-        quietStart: preference.quietHours.start,
-        quietEnd: preference.quietHours.end
+        reminderSummaryText: buildReminderSummary(preference, language, this.data.copy.reminderSummaryEmpty)
       });
     } catch { /* silent */ }
   },
 
-  toggleItem(event: WechatMiniprogram.CustomEvent<{ value: boolean }>) {
-    const type = event.currentTarget.dataset.type as string;
-    const enabled = Boolean(event.detail.value);
-    if (!this.data.preference) return;
-
-    const nextItems = this.data.preference.items.map((item: ReminderPreferenceItem) =>
-      item.type === type ? { ...item, enabled } : item
-    );
-    const language = this.data.language as DisplayLanguage;
-    const anyEnabled = nextItems.some((i: ReminderPreferenceItem) => i.enabled);
-    const nextPref = { ...this.data.preference, items: nextItems };
-
-    this.setData({
-      preference: nextPref,
-      reminderViews: buildReminderViews(nextItems, language),
-      anyReminderEnabled: anyEnabled
-    });
-    void this.autoSavePreference(nextPref);
+  openReminders() {
+    wx.navigateTo({ url: "/pages/reminders/index" });
   },
 
-  setLeadDays(event: WechatMiniprogram.BaseEvent) {
-    const days = Number(event.currentTarget.dataset.days);
-    if (!this.data.preference) return;
-
-    const nextItems = this.data.preference.items.map((item: ReminderPreferenceItem) =>
-      item.type === "period_due" ? { ...item, leadDays: days } : item
-    );
-    const language = this.data.language as DisplayLanguage;
-    const nextPref = { ...this.data.preference, items: nextItems };
-
-    this.setData({
-      leadDays: days,
-      preference: nextPref,
-      reminderViews: buildReminderViews(nextItems, language)
-    });
-    void this.autoSavePreference(nextPref);
+  openTrends() {
+    wx.navigateTo({ url: "/pages/trends/index" });
   },
 
-  changeQuietStart(event: WechatMiniprogram.CustomEvent<{ value: string }>) {
-    if (!this.data.preference) return;
-    const nextPref = {
-      ...this.data.preference,
-      quietHours: { ...this.data.preference.quietHours, start: event.detail.value }
-    };
-    this.setData({ quietStart: event.detail.value, preference: nextPref });
-    void this.autoSavePreference(nextPref);
-  },
-
-  changeQuietEnd(event: WechatMiniprogram.CustomEvent<{ value: string }>) {
-    if (!this.data.preference) return;
-    const nextPref = {
-      ...this.data.preference,
-      quietHours: { ...this.data.preference.quietHours, end: event.detail.value }
-    };
-    this.setData({ quietEnd: event.detail.value, preference: nextPref });
-    void this.autoSavePreference(nextPref);
-  },
-
-  async autoSavePreference(pref: ReminderPreferenceResponse) {
-    try {
-      await api.updateReminderPreferences(pref);
-    } catch { /* silent auto-save */ }
+  openPrivacy() {
+    wx.navigateTo({ url: "/pages/privacy/index" });
   },
 
   async exportData() {

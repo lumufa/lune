@@ -1,7 +1,10 @@
 {
   "src": [
+    "pages/Hello",
     "pages/Index",
     "pages/Onboarding",
-    "pages/Privacy"
+    "pages/Privacy",
+    "pages/LogEntry",
+    "pages/Trends"
   ]
 }

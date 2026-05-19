@@ -10,17 +10,19 @@ import {
   type DisplayLanguage
 } from "../../utils/i18n";
 
+const LEAD_DAYS_OPTIONS = ["0", "1", "2", "3", "4", "5", "6", "7"];
+
 interface ReminderCopy {
   languageButtonLabel: string;
-  timePickerLabel: string;
-  heroEyebrow: string;
-  heroTitlePrefix: string;
-  heroSubtitle: string;
+  title: string;
+  quietTitle: string;
   quietStartLabel: string;
   quietEndLabel: string;
   reminderSectionTitle: string;
+  currentTimeLabel: string;
+  leadDaysLabel: string;
+  timeLabel: string;
   saveLabel: string;
-  backToCalendarLabel: string;
   saveSuccess: string;
   saveFailed: string;
   loadFailed: string;
@@ -30,26 +32,24 @@ interface ReminderCopy {
 interface ReminderItemView {
   type: ReminderType;
   label: string;
-  detail: string;
-  icon: string;
   enabled: boolean;
+  leadDays: number;
+  leadDaysIndex: number;
+  time: string;
 }
 
 function buildCopy(language: DisplayLanguage): ReminderCopy {
   return {
     languageButtonLabel: getDisplayLanguageToggleLabel(language),
-    timePickerLabel: language === "en" ? "Refined Time-Picker" : "精细时间选择",
-    heroEyebrow: language === "en" ? "Quiet Hours" : "免打扰时段",
-    heroTitlePrefix: language === "en" ? "No-Disturb" : "免打扰",
-    heroSubtitle:
-      language === "en"
-        ? "Reminder pushes stay outside your quiet window."
-        : "提醒推送会自动避开你的免打扰时间。",
-    quietStartLabel: language === "en" ? "Quiet starts" : "免打扰开始",
-    quietEndLabel: language === "en" ? "Quiet ends" : "免打扰结束",
+    title: language === "en" ? "Reminder settings" : "提醒设置",
+    quietTitle: language === "en" ? "Quiet hours" : "免打扰时段",
+    quietStartLabel: language === "en" ? "Start" : "开始",
+    quietEndLabel: language === "en" ? "End" : "结束",
     reminderSectionTitle: language === "en" ? "Reminder items" : "提醒项目",
+    currentTimeLabel: language === "en" ? "Current time" : "当前时间",
+    leadDaysLabel: language === "en" ? "Lead days" : "提前天数",
+    timeLabel: language === "en" ? "Time" : "提醒时间",
     saveLabel: language === "en" ? "Save settings" : "保存设置",
-    backToCalendarLabel: language === "en" ? "Back to calendar" : "返回日历",
     saveSuccess: language === "en" ? "Reminder settings saved" : "提醒设置已保存",
     saveFailed: language === "en" ? "Save failed" : "保存失败",
     loadFailed: language === "en" ? "Failed to load reminder settings" : "提醒设置加载失败",
@@ -60,23 +60,10 @@ function buildCopy(language: DisplayLanguage): ReminderCopy {
   };
 }
 
-function buildReminderDetail(item: ReminderPreferenceItem, language: DisplayLanguage): string {
-  if (language === "en") {
-    return `${item.leadDays} day(s) ahead · ${item.time}`;
-  }
-
-  return `提前 ${item.leadDays} 天 · 时间 ${item.time}`;
-}
-
-function getReminderIcon(type: ReminderType): string {
-  switch (type) {
-    case "period_due":
-      return "📅";
-    case "delayed":
-      return "⏰";
-    default:
-      return "📝";
-  }
+function clampLeadIndex(value: number): number {
+  if (value < 0) return 0;
+  if (value > LEAD_DAYS_OPTIONS.length - 1) return LEAD_DAYS_OPTIONS.length - 1;
+  return value;
 }
 
 function buildReminderViews(
@@ -87,8 +74,9 @@ function buildReminderViews(
     type: item.type,
     enabled: item.enabled,
     label: getReminderTypeLabel(item.type, language),
-    detail: buildReminderDetail(item, language),
-    icon: getReminderIcon(item.type)
+    leadDays: item.leadDays,
+    leadDaysIndex: clampLeadIndex(item.leadDays),
+    time: item.time
   }));
 }
 
@@ -96,6 +84,7 @@ Page({
   data: {
     preference: null as ReminderPreferenceResponse | null,
     reminderViews: [] as ReminderItemView[],
+    leadDaysOptions: LEAD_DAYS_OPTIONS,
     isSaving: false,
     language: getStoredDisplayLanguage() as DisplayLanguage,
     copy: buildCopy(getStoredDisplayLanguage())
@@ -145,19 +134,31 @@ Page({
     }
   },
 
-  toggleItem(event: WechatMiniprogram.CustomEvent<{ value: boolean }>) {
-    const type = event.currentTarget.dataset.type as string;
-    const enabled = Boolean(event.detail.value);
-    const nextItems = this.data.preference?.items.map((item) =>
-      item.type === type ? { ...item, enabled } : item
+  applyItemPatch(type: string, patch: Partial<ReminderPreferenceItem>) {
+    if (!this.data.preference) return;
+    const nextItems = this.data.preference.items.map((item) =>
+      item.type === type ? { ...item, ...patch } : item
     );
     this.setData({
-      preference: {
-        ...(this.data.preference as ReminderPreferenceResponse),
-        items: nextItems ?? []
-      },
-      reminderViews: buildReminderViews(nextItems ?? [], this.data.language as DisplayLanguage)
+      preference: { ...this.data.preference, items: nextItems },
+      reminderViews: buildReminderViews(nextItems, this.data.language as DisplayLanguage)
     });
+  },
+
+  toggleItem(event: WechatMiniprogram.CustomEvent<{ value: boolean }>) {
+    const type = event.currentTarget.dataset.type as string;
+    this.applyItemPatch(type, { enabled: Boolean(event.detail.value) });
+  },
+
+  changeItemLeadDays(event: WechatMiniprogram.CustomEvent<{ value: number }>) {
+    const type = event.currentTarget.dataset.type as string;
+    const index = clampLeadIndex(Number(event.detail.value));
+    this.applyItemPatch(type, { leadDays: Number(LEAD_DAYS_OPTIONS[index]) });
+  },
+
+  changeItemTime(event: WechatMiniprogram.CustomEvent<{ value: string }>) {
+    const type = event.currentTarget.dataset.type as string;
+    this.applyItemPatch(type, { time: event.detail.value });
   },
 
   changeQuietStart(event: WechatMiniprogram.CustomEvent<{ value: string }>) {
@@ -206,11 +207,5 @@ Page({
     } finally {
       this.setData({ isSaving: false });
     }
-  },
-
-  backToCalendar() {
-    wx.switchTab({
-      url: "/pages/calendar/index"
-    });
   }
 });

@@ -53,7 +53,8 @@ const REMINDER_COPY: Record<ReminderType, LocalizedCopy> = {
 const CONSENT_TYPE_COPY: Record<ConsentType, LocalizedCopy> = {
   privacy_policy: { zh: "隐私政策确认", en: "Privacy policy consent" },
   sensitive_health_data: { zh: "敏感健康数据授权", en: "Sensitive health-data consent" },
-  notifications: { zh: "通知提醒授权", en: "Notification consent" }
+  notifications: { zh: "通知提醒授权", en: "Notification consent" },
+  ai_monthly_interpretation: { zh: "AI 月度解读授权", en: "AI monthly reading consent" }
 };
 
 const CONSENT_STATUS_COPY: Record<ConsentStatus, LocalizedCopy> = {

@@ -10,7 +10,11 @@ export type SymptomTag =
   | "acne"
   | "none";
 export type ReminderType = "period_due" | "delayed" | "logging_gap";
-export type ConsentType = "privacy_policy" | "sensitive_health_data" | "notifications";
+export type ConsentType =
+  | "privacy_policy"
+  | "sensitive_health_data"
+  | "notifications"
+  | "ai_monthly_interpretation";
 export type ConsentStatus = "granted" | "withdrawn";
 export type PredictionStatus = "insufficient_data" | "estimated" | "stable";
 export type PrivacyActionType =
@@ -119,6 +123,33 @@ export interface CycleDashboard {
   records: CycleRecord[];
   prediction: PredictionSnapshot;
   summary: CycleSummary;
+}
+
+export type AILanguage = "zh" | "en";
+
+export interface AIInterpretationRequest {
+  language?: AILanguage;
+}
+
+export interface AISanitizedPayload {
+  cycleCount: number;
+  averageCycleLength: number;
+  averagePeriodLength: number;
+  cycleVariability: number;
+  flowDistribution: { light: number; medium: number; heavy: number };
+  topSymptoms: SymptomTag[];
+  topMoods: MoodTag[];
+  predictionStatus: PredictionStatus;
+  language: AILanguage;
+}
+
+export interface AIInterpretationSnapshot {
+  generatedAt: string;
+  language: AILanguage;
+  interpretation: string;
+  highlights: string[];
+  disclaimer: string;
+  modelProvider: string;
 }
 
 export const DEFAULT_TIMEZONE = "Asia/Shanghai";

@@ -3,6 +3,8 @@ import type { DashboardResponse } from "../../types";
 import { api, isApiNetworkError } from "../../services/api";
 import {
   getDisplayLanguageToggleLabel,
+  getFlowLabel,
+  getMoodLabel,
   getNextDisplayLanguage,
   getStoredDisplayLanguage,
   setStoredDisplayLanguage,
@@ -12,15 +14,14 @@ import { todayIso } from "../../utils/date";
 
 interface HomeCopy {
   languageButtonLabel: string;
-  todayOverview: string;
   cycleDayLabel: string;
   dayUnit: string;
-  noRecordsYet: string;
-  untilNextPeriod: string;
-  periodLate: string;
+  emptyMessage: string;
+  untilNextPrefix: string;
+  untilNextSuffix: string;
+  latePrefix: string;
+  lateSuffix: string;
   predictedDatePrefix: string;
-  waitingFirstRecord: string;
-  waitingFirstRecordHint: string;
   logToday: string;
   editTodayLog: string;
   cycleSummary: string;
@@ -28,32 +29,40 @@ interface HomeCopy {
   averagePeriod: string;
   logCount: string;
   logCountUnit: string;
+  recentEntryTitle: string;
+  symptomUnit: string;
   networkError: string;
   loadFailed: string;
+}
+
+interface RecentEntry {
+  id: string;
+  dateLabel: string;
+  flowLabel: string;
+  moodLabel: string;
+  symptomsLabel: string;
 }
 
 function buildCopy(language: DisplayLanguage): HomeCopy {
   return {
     languageButtonLabel: getDisplayLanguageToggleLabel(language),
-    todayOverview: language === "en" ? "Today overview" : "今日概览",
     cycleDayLabel: language === "en" ? "Cycle day" : "周期第",
     dayUnit: language === "en" ? "days" : "天",
-    noRecordsYet: language === "en" ? "No records yet. Start today." : "还没有记录，从今天开始。",
-    untilNextPeriod: language === "en" ? "Until next period" : "距离下次月经还有",
-    periodLate: language === "en" ? "Period is late" : "月经迟到了",
-    predictedDatePrefix: language === "en" ? "Predicted date: " : "预测日期：",
-    waitingFirstRecord: language === "en" ? "Waiting for your first record" : "还在等第一条记录",
-    waitingFirstRecordHint:
-      language === "en"
-        ? "Log a start date and the home screen will begin to estimate your cycle."
-        : "记下一次开始时间，首页就会开始给出周期状态。",
+    emptyMessage: language === "en" ? "No records\nStart today" : "尚无记录\n今天开始",
+    untilNextPrefix: language === "en" ? "" : "距下次 ",
+    untilNextSuffix: language === "en" ? "d to next" : " 天",
+    latePrefix: language === "en" ? "" : "迟到 ",
+    lateSuffix: language === "en" ? "d late" : " 天",
+    predictedDatePrefix: language === "en" ? "Est. " : "预计 ",
     logToday: language === "en" ? "Log today" : "记录今天",
-    editTodayLog: language === "en" ? "Edit today's log" : "编辑今日记录",
+    editTodayLog: language === "en" ? "Edit today" : "编辑今日记录",
     cycleSummary: language === "en" ? "Cycle summary" : "周期概览",
     averageCycle: language === "en" ? "Average cycle" : "平均周期",
     averagePeriod: language === "en" ? "Average period" : "平均经期",
     logCount: language === "en" ? "Logs" : "记录次数",
     logCountUnit: language === "en" ? "items" : "条",
+    recentEntryTitle: language === "en" ? "Last entry" : "上次记录",
+    symptomUnit: language === "en" ? "symptom" : "项症状",
     networkError: language === "en" ? "API offline" : "接口未连接",
     loadFailed: language === "en" ? "Load failed" : "加载失败"
   };
@@ -80,6 +89,29 @@ function formatPredictionDate(value: string | undefined, language: DisplayLangua
     month: "2-digit",
     day: "2-digit"
   }).format(date);
+}
+
+function formatRecentDate(value: string, language: DisplayLanguage): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return new Intl.DateTimeFormat(language === "en" ? "en-US" : "zh-CN", {
+    month: "2-digit",
+    day: "2-digit"
+  }).format(date);
+}
+
+function buildRecentEntry(records: CycleRecord[], language: DisplayLanguage, symptomUnit: string): RecentEntry | null {
+  if (!records.length) return null;
+  const sorted = records.slice().sort((a, b) => b.startDate.localeCompare(a.startDate));
+  const latest = sorted[0];
+  const nonNoneSymptoms = (latest.symptoms ?? []).filter((s) => s !== "none");
+  return {
+    id: latest.id,
+    dateLabel: formatRecentDate(latest.startDate, language),
+    flowLabel: getFlowLabel(latest.flowLevel, language),
+    moodLabel: getMoodLabel(latest.mood, language),
+    symptomsLabel: nonNoneSymptoms.length > 0 ? `${nonNoneSymptoms.length} ${symptomUnit}` : ""
+  };
 }
 
 function buildCycleInfo(records: CycleRecord[], cycleLength: number) {
@@ -121,7 +153,7 @@ function findTodayRecord(records: CycleRecord[]): string | undefined {
 }
 
 const DEFAULT_CYCLE_LENGTH = 28;
-const DEFAULT_PERIOD_LENGTH = 5;
+const PLACEHOLDER = "—";
 
 Page({
   data: {
@@ -129,15 +161,18 @@ Page({
     copy: buildCopy(getStoredDisplayLanguage()),
     todayLabel: formatTodayDisplay(getStoredDisplayLanguage()),
     dashboard: null as DashboardResponse | null,
+    hasCycleInfo: false,
     cycleDay: 0,
     hasNextPeriod: false,
     daysUntilNext: 0,
     isLate: false,
+    ringSubText: "",
     predictedDate: "",
     todayRecordId: "",
-    averageCycleLength: DEFAULT_CYCLE_LENGTH,
-    averagePeriodLength: DEFAULT_PERIOD_LENGTH,
-    recordCount: 0
+    averageCycleLength: PLACEHOLDER as string | number,
+    averagePeriodLength: PLACEHOLDER as string | number,
+    recordCount: 0,
+    recentEntry: null as RecentEntry | null
   },
 
   onShow() {
@@ -184,19 +219,32 @@ Page({
     const cycleLength = summary?.averageCycleLength || DEFAULT_CYCLE_LENGTH;
     const cycleInfo = buildCycleInfo(records, cycleLength);
     const todayRecordId = findTodayRecord(records) ?? "";
+    const hasCycleInfo = records.length > 0;
+    const copy = this.data.copy as HomeCopy;
+    const ringSubText = hasCycleInfo
+      ? cycleInfo.isLate
+        ? `${copy.latePrefix}${cycleInfo.daysUntilNext}${copy.lateSuffix}`
+        : `${copy.untilNextPrefix}${cycleInfo.daysUntilNext}${copy.untilNextSuffix}`
+      : "";
+    const recentEntry = buildRecentEntry(records, language, copy.symptomUnit);
+    const recordCount = summary?.recordCount || 0;
+    const hasRecords = recordCount > 0;
 
     this.setData({
+      hasCycleInfo,
       cycleDay: cycleInfo.currentCycleDay,
       hasNextPeriod: Boolean(cycleInfo.nextPeriodDate && records.length > 0),
       daysUntilNext: cycleInfo.daysUntilNext,
       isLate: cycleInfo.isLate,
+      ringSubText,
       predictedDate: cycleInfo.nextPeriodDate
         ? formatPredictionDate(cycleInfo.nextPeriodDate.toISOString(), language)
         : "",
       todayRecordId,
-      averageCycleLength: summary?.averageCycleLength || DEFAULT_CYCLE_LENGTH,
-      averagePeriodLength: summary?.averagePeriodLength || DEFAULT_PERIOD_LENGTH,
-      recordCount: summary?.recordCount || 0
+      averageCycleLength: hasRecords ? summary!.averageCycleLength : PLACEHOLDER,
+      averagePeriodLength: hasRecords ? summary!.averagePeriodLength : PLACEHOLDER,
+      recordCount,
+      recentEntry
     });
   },
 
@@ -210,6 +258,14 @@ Page({
       const app = getApp<{ editRecordId?: string }>();
       app.editRecordId = todayRecordId;
     }
-    wx.switchTab({ url: "/pages/record/index" });
+    wx.navigateTo({ url: "/pages/record/index" });
+  },
+
+  openRecentLog() {
+    const recent = this.data.recentEntry as RecentEntry | null;
+    if (!recent) return;
+    const app = getApp<{ editRecordId?: string }>();
+    app.editRecordId = recent.id;
+    wx.navigateTo({ url: "/pages/record/index" });
   }
 });

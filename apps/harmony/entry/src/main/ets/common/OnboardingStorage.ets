@@ -1,5 +1,5 @@
 import dataPreferences from '@ohos.data.preferences';
-import { common } from '@kit.AbilityKit';
+import common from '@ohos.app.ability.common';
 
 const STORE_NAME: string = 'women_period_prefs';
 const KEY_ONBOARDED: string = 'onboarding_complete';

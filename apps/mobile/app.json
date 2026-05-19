@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "Lune",
+    "slug": "banxia-cycle-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/haven-icon.png",
+    "scheme": "banxiacycle",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/images/haven-splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "xyz.app315618.banxiacycle",
+      "buildNumber": "1"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#FF6B81",
+        "foregroundImage": "./assets/images/haven-android-icon-foreground.png",
+        "monochromeImage": "./assets/images/haven-android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "xyz.app315618.banxiacycle"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/haven-favicon.png"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "daa4831b-8422-45fa-bde8-01a3d3227698"
+      }
+    },
+    "owner": "lumufa",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/daa4831b-8422-45fa-bde8-01a3d3227698"
+    }
+  }
+}

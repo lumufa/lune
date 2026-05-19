@@ -5,13 +5,13 @@
   <view class="rec-card">
     <text class="card-label">{{copy.dateLabel}}</text>
     <view class="date-inline">
-      <picker mode="date" value="{{startDatePart}}" bindchange="changeStartDatePart">
+      <view class="date-tap" data-target="start" bindtap="openDatePicker">
         <text class="date-val">{{startDatePart}}</text>
-      </picker>
+      </view>
       <text class="date-arrow">→</text>
-      <picker mode="date" value="{{endDatePart}}" bindchange="changeEndDatePart">
+      <view class="date-tap" data-target="end" bindtap="openDatePicker">
         <text class="date-val">{{endDatePart}}</text>
-      </picker>
+      </view>
     </view>
   </view>
 
@@ -88,6 +88,27 @@
 
   <!-- Bottom spacer for fixed button -->
   <view class="btn-spacer"></view>
+</view>
+
+<!-- Date picker sheet -->
+<view class="date-sheet-mask {{pickerVisible ? 'date-sheet-mask-on' : ''}}" bindtap="cancelDatePicker" catchtouchmove="noop"></view>
+<view class="date-sheet {{pickerVisible ? 'date-sheet-on' : ''}}">
+  <view class="date-sheet-head">
+    <text class="date-sheet-btn" bindtap="cancelDatePicker">{{copy.cancelLabel}}</text>
+    <text class="date-sheet-title">{{pickerTarget === 'start' ? copy.startDateTitle : copy.endDateTitle}}</text>
+    <text class="date-sheet-btn date-sheet-btn-primary" bindtap="confirmDatePicker">{{copy.confirmLabel}}</text>
+  </view>
+  <picker-view class="date-picker-view" value="{{pickerIndex}}" indicator-class="date-picker-indicator" mask-class="date-picker-mask" bindchange="onDatePickerChange">
+    <picker-view-column>
+      <view class="date-picker-item" wx:for="{{pickerYears}}" wx:key="*this">{{item}}{{copy.yearUnit}}</view>
+    </picker-view-column>
+    <picker-view-column>
+      <view class="date-picker-item" wx:for="{{pickerMonths}}" wx:key="*this">{{item}}{{copy.monthUnit}}</view>
+    </picker-view-column>
+    <picker-view-column>
+      <view class="date-picker-item" wx:for="{{pickerDays}}" wx:key="*this">{{item}}{{copy.dayOfMonthUnit}}</view>
+    </picker-view-column>
+  </picker-view>
 </view>
 
 <!-- Fixed save button -->

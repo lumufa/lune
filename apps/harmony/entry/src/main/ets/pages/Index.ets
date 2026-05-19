@@ -1,39 +1,21 @@
 import router from '@ohos.router';
 import { api } from '../common/ApiClient';
-import { COLORS, RADII, SPACING } from '../common/DesignTokens';
-import {
-  formatConfidence,
-  formatFlowLabel,
-  formatMoodLabel,
-  formatPredictionStatus,
-  formatRecordRange,
-  formatShortDate,
-  formatWindow
-} from '../common/Formatters';
+import { COLORS, FONT_SIZE, FONT_WEIGHT, RADII, SPACING } from '../common/DesignTokens';
+import { DEFAULT_LANGUAGE, LANGUAGE_KEY, getCopy, getLanguageToggleLabel, getNextLanguage } from '../common/I18n';
+import { formatMoodLabel, formatShortDate } from '../common/Formatters';
 import {
   EMPTY_DASHBOARD,
   EMPTY_PREDICTION,
   EMPTY_SUMMARY,
-  FlowBreakdownItem,
   getAverageLabel,
-  getFlowBreakdown,
-  getHeroState,
-  getReliabilityLabel,
-  getSyncLabel,
   getTodayLabel,
-  getTrendBars,
-  getWindowLabel,
-  sortRecords,
-  TrendBarItem
+  sortRecords
 } from '../common/HomePresenter';
-import { RuntimeConfig } from '../common/RuntimeConfig';
 import {
   CycleRecord,
-  CycleRecordInput,
   CycleSummary,
   DashboardResponse,
-  PredictionSnapshot,
-  ReminderPreference
+  PredictionSnapshot
 } from '../common/Types';
 
 /* ─── helpers ─── */
@@ -43,6 +25,45 @@ function formatDateKey(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
+}
+
+function formatFullDate(dateKey: string, zh: boolean): string {
+  const parts = dateKey.split('-');
+  if (parts.length !== 3) return dateKey;
+  const y = Number(parts[0]);
+  const m = Number(parts[1]);
+  const d = Number(parts[2]);
+  if (zh) return `${y}年${m}月${d}日`;
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${months[m - 1]} ${d}, ${y}`;
+}
+
+function formatSymptomLabel(s: string, zh: boolean): string {
+  if (zh) {
+    switch (s) {
+      case 'cramps': return '痛经';
+      case 'bloating': return '腹胀';
+      case 'headache': return '头痛';
+      case 'fatigue': return '疲惫';
+      case 'back_pain': return '腰痛';
+      case 'acne': return '长痘';
+      default: return s;
+    }
+  }
+  switch (s) {
+    case 'cramps': return 'Cramps';
+    case 'bloating': return 'Bloating';
+    case 'headache': return 'Headache';
+    case 'fatigue': return 'Fatigue';
+    case 'back_pain': return 'Back pain';
+    case 'acne': return 'Acne';
+    default: return s;
+  }
+}
+
+interface LogNavParams {
+  date: string;
+  recordId?: string;
 }
 
 interface CalendarDayInfo {
@@ -102,73 +123,48 @@ function buildCalendarDays(year: number, month: number, periodMap: Map<string, C
   return result;
 }
 
-const WEEK_LABELS: string[] = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const FLOW_OPTIONS: string[] = ['light', 'medium', 'heavy'];
-const PAIN_OPTIONS: number[] = [0, 1, 2, 3];
-const MOOD_OPTIONS: string[] = ['steady', 'low', 'irritable', 'tired', 'energetic'];
-const SYMPTOM_OPTIONS: string[] = ['cramps', 'bloating', 'headache', 'fatigue', 'back_pain', 'acne'];
-
-function formatSymptomLabel(s: string): string {
-  switch (s) {
-    case 'cramps': return 'Cramps';
-    case 'bloating': return 'Bloating';
-    case 'headache': return 'Headache';
-    case 'fatigue': return 'Fatigue';
-    case 'back_pain': return 'Back pain';
-    case 'acne': return 'Acne';
-    default: return s;
-  }
-}
-
 function clampProgress(v: number, min: number, max: number): number {
-  return Math.min(Math.max(((v - min) / (max - min)) * 100, 8), 100);
+  return Math.min(Math.max(((v - min) / (max - min)) * 100, 0), 100);
 }
 
-interface FlowBarRow {
-  label: string;
-  percent: number;
-}
+const AUTO_COMPUTE_THRESHOLD: number = 3;
 
-function recordDurationDays(r: CycleRecord): number {
-  const s = new Date(r.startDate);
-  const e = new Date(r.endDate);
-  const sd = new Date(s.getFullYear(), s.getMonth(), s.getDate());
-  const ed = new Date(e.getFullYear(), e.getMonth(), e.getDate());
-  return Math.max(1, Math.round((ed.getTime() - sd.getTime()) / 86400000) + 1);
+function __initLangStorage(): string {
+  if (!AppStorage.Has(LANGUAGE_KEY)) {
+    AppStorage.SetOrCreate(LANGUAGE_KEY, DEFAULT_LANGUAGE);
+  }
+  return DEFAULT_LANGUAGE;
 }
+const __LANG_INIT: string = __initLangStorage();
 
 @Entry
 @Component
 struct Index {
+  @State private lang: string = 'en';
   @State private dashboard: DashboardResponse = EMPTY_DASHBOARD;
   @State private isLoading: boolean = true;
   @State private hasLoaded: boolean = false;
   @State private errorMessage: string = '';
-  @State private lastSyncedAt: string = '';
   @State private currentTab: number = 0;
 
   /* calendar state */
   @State private calYear: number = new Date().getFullYear();
   @State private calMonth: number = new Date().getMonth();
   @State private calDays: Array<CalendarDayInfo> = [];
-
-  /* record form state */
-  @State private recStartDate: string = formatDateKey(new Date());
-  @State private recEndDate: string = formatDateKey(new Date());
-  @State private recFlow: string = 'medium';
-  @State private recPain: number = 1;
-  @State private recMood: string = 'steady';
-  @State private recSymptoms: Array<string> = ['cramps'];
-  @State private recNote: string = '';
-  @State private recSubmitting: boolean = false;
+  @State private selectedCalDate: string = formatDateKey(new Date());
+  @State private selectedRecord: CycleRecord | null = null;
+  @State private selectedIsPredicted: boolean = false;
 
   /* settings state */
   @State private cycleLength: number = 28;
   @State private periodLength: number = 5;
-  @State private preference: ReminderPreference | null = null;
 
   aboutToAppear(): void {
-    this.refreshDashboard();
+    this.rebuildCalendar();
+  }
+
+  onPageShow(): void {
+    this.rebuildCalendar();
   }
 
   private async refreshDashboard(): Promise<void> {
@@ -178,7 +174,6 @@ struct Index {
       const response = await api.getDashboard();
       this.dashboard = response;
       this.hasLoaded = true;
-      this.lastSyncedAt = new Date().toISOString();
       if (response.summary) {
         if (response.summary.averageCycleLength > 0) this.cycleLength = response.summary.averageCycleLength;
         if (response.summary.averagePeriodLength > 0) this.periodLength = response.summary.averagePeriodLength;
@@ -194,7 +189,6 @@ struct Index {
   private prediction(): PredictionSnapshot { return this.dashboard.prediction ?? EMPTY_PREDICTION; }
   private summary(): CycleSummary { return this.dashboard.summary ?? EMPTY_SUMMARY; }
   private allRecords(): Array<CycleRecord> { return sortRecords(this.dashboard.records); }
-  private recentRecords(): Array<CycleRecord> { return this.allRecords().slice(0, 3); }
 
   private cycleDay(): number {
     const recs = this.allRecords();
@@ -237,603 +231,644 @@ struct Index {
     }
     this.calDays = buildCalendarDays(this.calYear, this.calMonth, map, formatDateKey(new Date()),
       lastStart, this.cycleLength, this.periodLength);
+    this.syncSelectedRecord();
+  }
+
+  private syncSelectedRecord(): void {
+    const map = buildPeriodMap(this.dashboard.records ?? []);
+    this.selectedRecord = map.get(this.selectedCalDate) ?? null;
+    const info = this.calDays.find((d: CalendarDayInfo) => d.dateKey === this.selectedCalDate);
+    this.selectedIsPredicted = !!(info && info.isPredicted);
+  }
+
+  private selectDate(dateKey: string): void {
+    this.selectedCalDate = dateKey;
+    this.syncSelectedRecord();
   }
 
   private monthLabel(): string {
     const d = new Date(this.calYear, this.calMonth, 1);
-    return new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'long' }).format(d);
+    const locale = this.lang === 'zh' ? 'zh-CN' : 'en-US';
+    return new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long' }).format(d);
   }
 
-  private async submitRecord(): Promise<void> {
-    this.recSubmitting = true;
-    const payload: CycleRecordInput = {
-      startDate: `${this.recStartDate}T09:00:00.000Z`,
-      endDate: `${this.recEndDate}T18:00:00.000Z`,
-      flowLevel: this.recFlow,
-      painLevel: this.recPain,
-      symptoms: this.recSymptoms,
-      mood: this.recMood,
-      note: this.recNote.trim() || undefined
-    };
-    try {
-      await api.createRecord(payload);
-      this.recNote = '';
-      this.recSymptoms = ['cramps'];
-      this.recPain = 1;
-      this.recFlow = 'medium';
-      this.recMood = 'steady';
-      await this.refreshDashboard();
-      this.currentTab = 0;
-    } catch (error) {
-      this.errorMessage = `Save failed: ${String(error)}`;
-    } finally {
-      this.recSubmitting = false;
-    }
+  private flowOptionLabel(opt: string): string {
+    const copy = getCopy(this.lang).trends;
+    if (opt === 'light') return copy.flowLight;
+    if (opt === 'medium') return copy.flowMedium;
+    return copy.flowHeavy;
+  }
+
+  private recordForDate(dateKey: string): CycleRecord | null {
+    if (!dateKey) return null;
+    const map = buildPeriodMap(this.dashboard.records ?? []);
+    return map.get(dateKey) ?? null;
+  }
+
+  private isPredictedDate(dateKey: string): boolean {
+    if (!dateKey) return false;
+    const info = this.calDays.find((d: CalendarDayInfo) => d.dateKey === dateKey);
+    return !!(info && info.isPredicted);
+  }
+
+  private todayRecord(): CycleRecord | null {
+    return this.recordForDate(formatDateKey(new Date()));
+  }
+
+  private openLog(date: string, recordId?: string): void {
+    const params: LogNavParams = { date };
+    if (recordId) params.recordId = recordId;
+    router.pushUrl({ url: 'pages/LogEntry', params });
+  }
+
+  private openTrends(): void {
+    router.pushUrl({ url: 'pages/Trends' });
+  }
+
+  private openPrivacy(): void {
+    router.pushUrl({ url: 'pages/Privacy' });
   }
 
   /* ─── Builder: Home Tab ─── */
   @Builder
   private HomeTab() {
-    Scroll() {
-      Column({ space: SPACING.lg }) {
-        // Top bar
-        Row({ space: SPACING.sm }) {
-          Column().width(40).height(40).borderRadius(20).backgroundColor(COLORS.pinkMist)
-          Column({ space: 2 }) {
-            Text(getTodayLabel()).fontSize(26).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
-            Text('Today overview').fontSize(12).fontColor(COLORS.floMuted)
-          }.alignItems(HorizontalAlign.Center).layoutWeight(1)
-          Text('📅').fontSize(22).onClick(() => { this.currentTab = 1; })
-        }.width('100%').alignItems(VerticalAlign.Center)
+    Stack({ alignContent: Alignment.BottomEnd }) {
+      Scroll() {
+        Column({ space: SPACING.md }) {
+          // Top bar
+          Row({ space: SPACING.sm }) {
+            Column().width(40).height(40).borderRadius(20).backgroundColor(COLORS.pinkMist)
+            Column() {
+              Text(getTodayLabel())
+                .fontSize(FONT_SIZE.displaySmall).fontWeight(FONT_WEIGHT.bold).fontColor(COLORS.ink)
+            }.alignItems(HorizontalAlign.Center).layoutWeight(1)
+            Text(getLanguageToggleLabel(this.lang))
+              .fontSize(FONT_SIZE.body).fontWeight(FONT_WEIGHT.bold).fontColor(COLORS.accentDeep)
+              .width(40).height(32).borderRadius(16).backgroundColor(COLORS.pinkMist)
+              .textAlign(TextAlign.Center)
+              .onClick(() => { this.lang = getNextLanguage(this.lang); })
+          }.width('100%').alignItems(VerticalAlign.Center)
 
-        // Hero panel
-        Column({ space: SPACING.xl }) {
-          // Ring
-          Column() {
-            if (this.cycleDay() > 0) {
-              Text('Cycle day').fontSize(14).fontColor(COLORS.muted)
-              Text(String(this.cycleDay())).fontSize(56).fontWeight(FontWeight.Bold).fontColor(COLORS.floPink)
-              Text('days').fontSize(14).fontColor(COLORS.muted)
-            } else {
-              Text('No records yet.\nStart today.')
-                .fontSize(14).fontColor(COLORS.muted).textAlign(TextAlign.Center)
-            }
-          }
-          .width(200).height(200).borderRadius(100)
-          .borderWidth(6).borderColor(COLORS.ringBorder)
-          .backgroundColor(COLORS.surface)
-          .justifyContent(FlexAlign.Center).alignItems(HorizontalAlign.Center)
+          // Hero panel — compact ring
+          Column({ space: SPACING.sm }) {
+            // Ring (≤40% screen width)
+            Stack({ alignContent: Alignment.Center }) {
+              Column()
+                .width(150).height(150).borderRadius(75)
+                .borderWidth(5).borderColor(COLORS.ringBorder)
+                .backgroundColor(COLORS.surface)
 
-          // Copy
-          Column({ space: SPACING.xs }) {
-            if (this.allRecords().length > 0) {
-              Text(this.isLate() ? 'Period is late' : 'Until next period')
-                .fontSize(24).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk).textAlign(TextAlign.Center)
-              Text(`${this.daysUntilNext()} days`)
-                .fontSize(40).fontWeight(FontWeight.Bold).fontColor(this.isLate() ? COLORS.warning : COLORS.floPink)
-              if (this.prediction().predictedStartDate) {
-                Text(`Predicted date: ${formatShortDate(this.prediction().predictedStartDate)}`)
-                  .fontSize(14).fontColor(COLORS.textBody).textAlign(TextAlign.Center)
+              if (this.allRecords().length > 0) {
+                Column({ space: 2 }) {
+                  Text(getCopy(this.lang).home.cycleDay)
+                    .fontSize(FONT_SIZE.footnote).fontColor(COLORS.muted)
+                  Text(String(this.cycleDay()))
+                    .fontSize(42).fontWeight(FONT_WEIGHT.heavy).fontColor(COLORS.accent)
+                  Text(this.isLate()
+                    ? (this.lang === 'zh' ? `迟到 ${this.daysUntilNext()} 天` : `${this.daysUntilNext()}d late`)
+                    : (this.lang === 'zh' ? `距下次 ${this.daysUntilNext()} 天` : `${this.daysUntilNext()}d to next`))
+                    .fontSize(FONT_SIZE.footnote)
+                    .fontColor(this.isLate() ? COLORS.warning : COLORS.inkSecondary)
+                    .fontWeight(FONT_WEIGHT.semibold)
+                }.alignItems(HorizontalAlign.Center)
+              } else {
+                Text(getCopy(this.lang).home.noRecordsLine)
+                  .fontSize(FONT_SIZE.metaLabel).fontColor(COLORS.muted).textAlign(TextAlign.Center)
               }
-            } else {
-              Text('Waiting for your first record')
-                .fontSize(24).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk).textAlign(TextAlign.Center)
-              Text('Log a start date and the home screen will begin to estimate your cycle.')
-                .fontSize(14).fontColor(COLORS.textBody).textAlign(TextAlign.Center)
+            }.width(150).height(150)
+
+            // Predicted date caption
+            if (this.allRecords().length > 0 && this.prediction().predictedStartDate) {
+              Text(`${getCopy(this.lang).home.predictedDate} · ${formatShortDate(this.prediction().predictedStartDate)}`)
+                .fontSize(FONT_SIZE.footnote).fontColor(COLORS.muted).textAlign(TextAlign.Center)
+            } else if (this.allRecords().length === 0) {
+              Text(getCopy(this.lang).home.waitingBody)
+                .fontSize(FONT_SIZE.footnote).fontColor(COLORS.muted).textAlign(TextAlign.Center)
+                .margin({ top: SPACING.xxs, left: SPACING.md, right: SPACING.md })
             }
-          }.alignItems(HorizontalAlign.Center)
 
-          // CTA button
-          Button('Log today')
-            .width('100%').height(52).borderRadius(26)
-            .backgroundColor(COLORS.floPink).fontColor(COLORS.surface)
-            .fontSize(17).fontWeight(FontWeight.Bold)
-            .onClick(() => { this.currentTab = 2; })
+            // CTA — compact, not full-width
+            Button(getCopy(this.lang).home.logToday)
+              .height(44).borderRadius(22)
+              .backgroundColor(COLORS.accent).fontColor(COLORS.surface)
+              .fontSize(FONT_SIZE.subheading).fontWeight(FONT_WEIGHT.bold)
+              .padding({ left: SPACING.lg, right: SPACING.lg })
+              .constraintSize({ minWidth: 160 })
+              .margin({ top: SPACING.xs })
+              .onClick(() => {
+                const today = formatDateKey(new Date());
+                const rec = this.todayRecord();
+                this.openLog(today, rec?.id);
+              })
+          }
+          .width('100%').padding(SPACING.md).borderRadius(RADII.xl)
+          .backgroundColor(COLORS.pinkMist).alignItems(HorizontalAlign.Center)
+
+          // Summary — 3-column grid
+          Column({ space: SPACING.sm }) {
+            Row() {
+              Text(getCopy(this.lang).home.cycleSummary)
+                .fontSize(FONT_SIZE.title).fontWeight(FONT_WEIGHT.bold).fontColor(COLORS.ink)
+              Blank()
+              Text(this.lang === 'zh' ? '趋势 ›' : 'Trends ›')
+                .fontSize(FONT_SIZE.metaLabel).fontColor(COLORS.accent).fontWeight(FONT_WEIGHT.semibold)
+                .onClick(() => this.openTrends())
+            }.width('100%')
+
+            Row({ space: SPACING.xs }) {
+              Column({ space: 2 }) {
+                Text(getAverageLabel(this.summary().averageCycleLength))
+                  .fontSize(FONT_SIZE.heading).fontWeight(FONT_WEIGHT.heavy).fontColor(COLORS.ink)
+                Text(getCopy(this.lang).home.dayUnit)
+                  .fontSize(FONT_SIZE.caption).fontColor(COLORS.muted)
+                Text(getCopy(this.lang).home.avgCycle)
+                  .fontSize(FONT_SIZE.footnote).fontColor(COLORS.inkSecondary).textAlign(TextAlign.Center)
+              }.layoutWeight(1).padding(SPACING.sm).borderRadius(RADII.md)
+                .backgroundColor(COLORS.surface).borderWidth(1).borderColor(COLORS.lineStrong)
+                .alignItems(HorizontalAlign.Center)
+
+              Column({ space: 2 }) {
+                Text(getAverageLabel(this.summary().averagePeriodLength))
+                  .fontSize(FONT_SIZE.heading).fontWeight(FONT_WEIGHT.heavy).fontColor(COLORS.ink)
+                Text(getCopy(this.lang).home.dayUnit)
+                  .fontSize(FONT_SIZE.caption).fontColor(COLORS.muted)
+                Text(getCopy(this.lang).home.avgPeriod)
+                  .fontSize(FONT_SIZE.footnote).fontColor(COLORS.inkSecondary).textAlign(TextAlign.Center)
+              }.layoutWeight(1).padding(SPACING.sm).borderRadius(RADII.md)
+                .backgroundColor(COLORS.surface).borderWidth(1).borderColor(COLORS.lineStrong)
+                .alignItems(HorizontalAlign.Center)
+
+              Column({ space: 2 }) {
+                Text(String(this.summary().recordCount))
+                  .fontSize(FONT_SIZE.heading).fontWeight(FONT_WEIGHT.heavy).fontColor(COLORS.ink)
+                Text(getCopy(this.lang).home.itemsUnit)
+                  .fontSize(FONT_SIZE.caption).fontColor(COLORS.muted)
+                Text(getCopy(this.lang).home.logs)
+                  .fontSize(FONT_SIZE.footnote).fontColor(COLORS.inkSecondary).textAlign(TextAlign.Center)
+              }.layoutWeight(1).padding(SPACING.sm).borderRadius(RADII.md)
+                .backgroundColor(COLORS.surface).borderWidth(1).borderColor(COLORS.lineStrong)
+                .alignItems(HorizontalAlign.Center)
+            }.width('100%')
+          }.width('100%')
+
+          // Recent record card
+          if (this.allRecords().length > 0) {
+            Column({ space: SPACING.xs }) {
+              Row() {
+                Text(this.lang === 'zh' ? '最近记录' : 'Recent log')
+                  .fontSize(FONT_SIZE.subheading).fontWeight(FONT_WEIGHT.bold).fontColor(COLORS.ink)
+                Blank()
+                Text(this.lang === 'zh' ? '编辑 ›' : 'Edit ›')
+                  .fontSize(FONT_SIZE.metaLabel).fontColor(COLORS.accent).fontWeight(FONT_WEIGHT.semibold)
+              }.width('100%')
+
+              Row({ space: SPACING.xs }) {
+                Text(formatShortDate(this.allRecords()[0].startDate))
+                  .fontSize(FONT_SIZE.body).fontWeight(FONT_WEIGHT.semibold).fontColor(COLORS.ink)
+                Blank()
+                Text(this.flowOptionLabel(this.allRecords()[0].flowLevel))
+                  .fontSize(FONT_SIZE.caption).fontWeight(FONT_WEIGHT.semibold).fontColor(COLORS.accent)
+                  .padding({ left: 8, right: 8, top: 3, bottom: 3 })
+                  .borderRadius(10).backgroundColor(COLORS.accentSoft)
+                Text(formatMoodLabel(this.allRecords()[0].mood))
+                  .fontSize(FONT_SIZE.caption).fontWeight(FONT_WEIGHT.semibold).fontColor(COLORS.inkSecondary)
+                  .padding({ left: 8, right: 8, top: 3, bottom: 3 })
+                  .borderRadius(10).backgroundColor(COLORS.chipIdle)
+                if ((this.allRecords()[0].symptoms ?? []).length > 0) {
+                  Text(`${(this.allRecords()[0].symptoms ?? []).length} ${this.lang === 'zh' ? '项症状' : 'symptoms'}`)
+                    .fontSize(FONT_SIZE.caption).fontWeight(FONT_WEIGHT.medium).fontColor(COLORS.muted)
+                }
+              }.width('100%').alignItems(VerticalAlign.Center)
+            }
+            .width('100%').padding(SPACING.md).borderRadius(RADII.lg)
+            .backgroundColor(COLORS.surface).borderWidth(1).borderColor(COLORS.lineStrong)
+            .onClick(() => {
+              const rec = this.allRecords()[0];
+              this.openLog(rec.startDate.slice(0, 10), rec.id);
+            })
+          }
         }
-        .width('100%').padding(20).borderRadius(RADII.xl)
-        .backgroundColor(COLORS.floHero).alignItems(HorizontalAlign.Center)
-
-        // Summary card
-        Column() {
-          Row() {
-            Text('Cycle summary').fontSize(18).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
-            Blank()
-            Text('→').fontSize(18).fontColor(COLORS.floMuted).onClick(() => { this.currentTab = 1; })
-          }.width('100%').height(54).padding({ left: 18, right: 18 })
-          .borderWidth({ bottom: 0.5 }).borderColor(COLORS.floBorder)
-
-          Row() {
-            Text('Average cycle').fontSize(15).fontColor(COLORS.textBody)
-            Blank()
-            Text(`${getAverageLabel(this.summary().averageCycleLength)} days`)
-              .fontSize(15).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
-          }.width('100%').height(54).padding({ left: 18, right: 18 })
-          .borderWidth({ bottom: 0.5 }).borderColor(COLORS.floBorder)
-
-          Row() {
-            Text('Average period').fontSize(15).fontColor(COLORS.textBody)
-            Blank()
-            Text(`${getAverageLabel(this.summary().averagePeriodLength)} days`)
-              .fontSize(15).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
-          }.width('100%').height(54).padding({ left: 18, right: 18 })
-          .borderWidth({ bottom: 0.5 }).borderColor(COLORS.floBorder)
-
-          Row() {
-            Text('Logs').fontSize(15).fontColor(COLORS.textBody)
-            Blank()
-            Text(`${this.summary().recordCount} items`)
-              .fontSize(15).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
-          }.width('100%').height(54).padding({ left: 18, right: 18 })
-        }
-        .width('100%').borderRadius(RADII.lg)
-        .backgroundColor(COLORS.surface)
-        .borderWidth(1).borderColor(COLORS.floBorder)
-      }
-      .width('100%').padding({ left: SPACING.lg, right: SPACING.lg, top: SPACING.md, bottom: SPACING.xxl })
+        .width('100%').padding({ left: SPACING.md, right: SPACING.md, top: SPACING.md, bottom: SPACING.xxl })
+      }.layoutWeight(1).scrollBar(BarState.Off)
     }
+    .width('100%').height('100%')
   }
 
   /* ─── Builder: Calendar Tab ─── */
   @Builder
   private CalendarTab() {
-    Scroll() {
-      Column({ space: 18 }) {
-        // Header with nav
-        Row() {
-          Text('‹').fontSize(24).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
-            .width(40).height(40).textAlign(TextAlign.Center)
-            .onClick(() => {
-              let m = this.calMonth - 1;
-              let y = this.calYear;
-              if (m < 0) { m = 11; y -= 1; }
-              this.calMonth = m; this.calYear = y; this.rebuildCalendar();
-            })
-
-          Column({ space: 2 }) {
-            Text(this.monthLabel()).fontSize(22).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
-            Text('Tap a date to log quickly').fontSize(12).fontColor(COLORS.floMuted)
-          }.layoutWeight(1).alignItems(HorizontalAlign.Center)
-
-          Text('›').fontSize(24).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
-            .width(40).height(40).textAlign(TextAlign.Center)
-            .onClick(() => {
-              let m = this.calMonth + 1;
-              let y = this.calYear;
-              if (m > 11) { m = 0; y += 1; }
-              this.calMonth = m; this.calYear = y; this.rebuildCalendar();
-            })
-        }.width('100%').alignItems(VerticalAlign.Center)
-
-        // Calendar grid
+    Stack({ alignContent: Alignment.BottomEnd }) {
+      Scroll() {
         Column({ space: SPACING.sm }) {
-          // Week headers
+          // Header with nav — no duplicate status bar
           Row() {
-            ForEach(WEEK_LABELS, (label: string) => {
-              Text(label).fontSize(12).fontColor(COLORS.mutedSoft).fontWeight(FontWeight.Medium)
-                .width('14.28%').textAlign(TextAlign.Center)
-            }, (label: string) => label)
-          }.width('100%')
-
-          // Day cells — use Flex for wrapping
-          Flex({ wrap: FlexWrap.Wrap }) {
-            ForEach(this.calDays, (item: CalendarDayInfo) => {
-              Column() {
-                if (item.isEmpty) {
-                  Column().width(40).height(40)
-                } else {
-                  Column() {
-                    Text(String(item.day))
-                      .fontSize(15)
-                      .fontWeight(item.isToday || item.isPeriod ? FontWeight.Bold : FontWeight.Medium)
-                      .fontColor(item.isPeriod ? COLORS.surface : item.isPredicted ? COLORS.floPink : item.isToday ? COLORS.floInk : COLORS.textBody)
-                  }
-                  .width(40).height(40).borderRadius(20)
-                  .justifyContent(FlexAlign.Center).alignItems(HorizontalAlign.Center)
-                  .backgroundColor(item.isPeriod ? COLORS.floPink : item.isToday ? COLORS.pinkMist : 'transparent')
-                  .borderWidth(item.isPredicted ? 2 : 0).borderColor(COLORS.floPinkBorder)
-
-                  if (item.hasSymptoms && !item.isPeriod) {
-                    Column().width(6).height(6).borderRadius(3)
-                      .backgroundColor(COLORS.symptomDot).margin({ top: 4 })
-                  } else {
-                    Column().height(10)
-                  }
-                }
-              }
-              .width('14.28%').alignItems(HorizontalAlign.Center).margin({ bottom: 14 })
-            }, (item: CalendarDayInfo) => item.key)
-          }.width('100%')
-        }
-        .width('100%').borderRadius(RADII.xl).backgroundColor(COLORS.surface)
-        .padding({ left: 10, right: 10, top: 16, bottom: 12 })
-
-        // Legend
-        Row({ space: 16 }) {
-          Row({ space: 6 }) {
-            Column().width(12).height(12).borderRadius(6).backgroundColor(COLORS.floPink)
-            Text('Period').fontSize(12).fontColor(COLORS.textBody)
-          }
-          Row({ space: 6 }) {
-            Column().width(12).height(12).borderRadius(6)
-              .borderWidth(2).borderColor(COLORS.floPinkBorder)
-            Text('Predicted').fontSize(12).fontColor(COLORS.textBody)
-          }
-          Row({ space: 6 }) {
-            Column().width(12).height(12).borderRadius(6).backgroundColor(COLORS.symptomDot)
-            Text('Symptoms').fontSize(12).fontColor(COLORS.textBody)
-          }
-        }
-        .width('100%').padding(16).borderRadius(18)
-        .backgroundColor(COLORS.pinkMist).borderWidth(1).borderColor(COLORS.pinkBorder)
-      }
-      .width('100%').padding({ left: SPACING.md, right: SPACING.md, top: SPACING.md, bottom: SPACING.xxl })
-    }
-  }
-
-  /* ─── Builder: Record Tab ─── */
-  @Builder
-  private RecordTab() {
-    Scroll() {
-      Column({ space: 18 }) {
-        Column({ space: 4 }) {
-          Text('Log').fontSize(24).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
-          Text('Quick entry for this cycle').fontSize(14).fontColor(COLORS.floMuted)
-        }.width('100%').alignItems(HorizontalAlign.Start)
-
-        // Date card
-        Column({ space: 14 }) {
-          Text('Date range').fontSize(17).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
-          Row({ space: 12 }) {
-            Column({ space: 6 }) {
-              Text('Start').fontSize(12).fontColor(COLORS.muted).fontWeight(FontWeight.Medium)
-              Text(this.recStartDate).fontSize(15).fontWeight(FontWeight.Medium).fontColor(COLORS.floInk)
-                .height(48).borderRadius(14).backgroundColor(COLORS.neutralSoft)
-                .padding({ left: 14, right: 14 }).width('100%').textAlign(TextAlign.Center)
-            }.layoutWeight(1)
-            Column({ space: 6 }) {
-              Text('End').fontSize(12).fontColor(COLORS.muted).fontWeight(FontWeight.Medium)
-              Text(this.recEndDate).fontSize(15).fontWeight(FontWeight.Medium).fontColor(COLORS.floInk)
-                .height(48).borderRadius(14).backgroundColor(COLORS.neutralSoft)
-                .padding({ left: 14, right: 14 }).width('100%').textAlign(TextAlign.Center)
-            }.layoutWeight(1)
-          }.width('100%')
-        }.cardStyle()
-
-        // Flow card
-        Column({ space: 14 }) {
-          Text('Flow').fontSize(17).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
-          Row({ space: 10 }) {
-            ForEach(FLOW_OPTIONS, (opt: string) => {
-              Text(formatFlowLabel(opt))
-                .fontSize(15).fontWeight(FontWeight.Medium)
-                .fontColor(this.recFlow === opt ? COLORS.floPink : COLORS.textBody)
-                .height(46).layoutWeight(1).textAlign(TextAlign.Center).borderRadius(14)
-                .borderWidth(1).borderColor(this.recFlow === opt ? COLORS.pinkBorder : COLORS.lineStrong)
-                .backgroundColor(this.recFlow === opt ? COLORS.pinkMist : COLORS.surface)
-                .onClick(() => { this.recFlow = opt; })
-            }, (opt: string) => opt)
-          }.width('100%')
-        }.cardStyle()
-
-        // Pain card
-        Column({ space: 14 }) {
-          Text('Pain level').fontSize(17).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
-          Row({ space: 10 }) {
-            ForEach(PAIN_OPTIONS, (opt: number) => {
-              Text(String(opt))
-                .fontSize(15).fontWeight(FontWeight.Medium)
-                .fontColor(this.recPain === opt ? COLORS.floPink : COLORS.textBody)
-                .height(46).layoutWeight(1).textAlign(TextAlign.Center).borderRadius(14)
-                .borderWidth(1).borderColor(this.recPain === opt ? COLORS.pinkBorder : COLORS.lineStrong)
-                .backgroundColor(this.recPain === opt ? COLORS.pinkMist : COLORS.surface)
-                .onClick(() => { this.recPain = opt; })
-            }, (opt: number) => String(opt))
-          }.width('100%')
-        }.cardStyle()
-
-        // Symptoms card
-        Column({ space: 14 }) {
-          Text('Symptoms').fontSize(17).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
-          Flex({ wrap: FlexWrap.Wrap }) {
-            ForEach(SYMPTOM_OPTIONS, (opt: string) => {
-              Column() {
-                Text(formatSymptomLabel(opt))
-                  .fontSize(12).fontColor(this.recSymptoms.indexOf(opt) >= 0 ? COLORS.floPink : COLORS.textBody)
-                  .fontWeight(this.recSymptoms.indexOf(opt) >= 0 ? FontWeight.Medium : FontWeight.Regular)
-              }
-              .width('30.5%').height(82).borderRadius(16)
-              .justifyContent(FlexAlign.Center).alignItems(HorizontalAlign.Center)
-              .borderWidth(1).borderColor(this.recSymptoms.indexOf(opt) >= 0 ? COLORS.pinkBorder : COLORS.lineStrong)
-              .backgroundColor(this.recSymptoms.indexOf(opt) >= 0 ? COLORS.pinkMist : COLORS.surface)
-              .margin({ right: '3%', bottom: 12 })
+            Text('‹').fontSize(22).fontWeight(FONT_WEIGHT.bold).fontColor(COLORS.ink)
+              .width(40).height(40).textAlign(TextAlign.Center)
               .onClick(() => {
-                const idx = this.recSymptoms.indexOf(opt);
-                if (idx >= 0) {
-                  this.recSymptoms = this.recSymptoms.filter((s: string) => s !== opt);
-                } else {
-                  this.recSymptoms = [...this.recSymptoms, opt];
-                }
+                let m = this.calMonth - 1;
+                let y = this.calYear;
+                if (m < 0) { m = 11; y -= 1; }
+                this.calMonth = m; this.calYear = y; this.rebuildCalendar();
               })
-            }, (opt: string) => opt)
-          }.width('100%')
-        }.cardStyle()
 
-        // Mood card
-        Column({ space: 14 }) {
-          Text('Mood').fontSize(17).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
-          Flex({ wrap: FlexWrap.Wrap }) {
-            ForEach(MOOD_OPTIONS, (opt: string) => {
-              Text(formatMoodLabel(opt))
-                .fontSize(14).fontWeight(FontWeight.Medium)
-                .fontColor(this.recMood === opt ? COLORS.floPink : COLORS.textBody)
-                .height(38).padding({ left: 14, right: 14 }).borderRadius(19)
-                .backgroundColor(this.recMood === opt ? COLORS.pinkMist : COLORS.neutralSoft)
-                .margin({ right: 10, bottom: 10 })
-                .onClick(() => { this.recMood = opt; })
-            }, (opt: string) => opt)
-          }.width('100%')
-        }.cardStyle()
+            Text(this.monthLabel())
+              .fontSize(FONT_SIZE.titleLarge).fontWeight(FONT_WEIGHT.bold).fontColor(COLORS.ink)
+              .layoutWeight(1).textAlign(TextAlign.Center)
 
-        // Note card
-        Column({ space: 14 }) {
-          Text('Note').fontSize(17).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
-          TextInput({ placeholder: 'Optional note for today', text: this.recNote })
-            .height(110).borderRadius(14).backgroundColor(COLORS.neutralSoft)
-            .fontSize(15).fontColor(COLORS.floInk)
-            .onChange((value: string) => { this.recNote = value; })
-        }.cardStyle()
+            Text('›').fontSize(22).fontWeight(FONT_WEIGHT.bold).fontColor(COLORS.ink)
+              .width(40).height(40).textAlign(TextAlign.Center)
+              .onClick(() => {
+                let m = this.calMonth + 1;
+                let y = this.calYear;
+                if (m > 11) { m = 0; y += 1; }
+                this.calMonth = m; this.calYear = y; this.rebuildCalendar();
+              })
+          }.width('100%').alignItems(VerticalAlign.Center)
 
-        // Save
-        Button(this.recSubmitting ? 'Saving...' : 'Save log')
-          .width('100%').height(56).borderRadius(18)
-          .backgroundColor(COLORS.ink).fontColor(COLORS.surface)
-          .fontSize(17).fontWeight(FontWeight.Bold)
-          .onClick(() => { this.submitRecord(); })
-      }
-      .width('100%').padding({ left: SPACING.lg, right: SPACING.lg, top: 18, bottom: SPACING.xxl })
-    }
-  }
+          // Calendar grid
+          Column({ space: SPACING.sm }) {
+            Row() {
+              ForEach(getCopy(this.lang).calendar.weekLabels, (label: string) => {
+                Text(label).fontSize(FONT_SIZE.footnote).fontColor(COLORS.mutedSoft)
+                  .fontWeight(FONT_WEIGHT.medium)
+                  .width('14.28%').textAlign(TextAlign.Center)
+              }, (label: string) => label)
+            }.width('100%')
 
-  /* ─── Builder: Trends Tab ─── */
-  @Builder
-  private TrendsTab() {
-    Scroll() {
-      Column({ space: 18 }) {
-        Column({ space: 4 }) {
-          Text('Trends').fontSize(24).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
-          Text('Averages and recent activity').fontSize(14).fontColor(COLORS.floMuted)
-        }.width('100%').alignItems(HorizontalAlign.Start)
+            Flex({ wrap: FlexWrap.Wrap }) {
+              ForEach(this.calDays, (item: CalendarDayInfo) => {
+                Column() {
+                  if (item.isEmpty) {
+                    Column().width(40).height(40)
+                  } else {
+                    Column() {
+                      Text(String(item.day))
+                        .fontSize(FONT_SIZE.bodyLarge)
+                        .fontWeight(item.isToday || item.isPeriod ? FONT_WEIGHT.bold : FONT_WEIGHT.medium)
+                        .fontColor(item.isPeriod ? COLORS.surface
+                          : item.isPredicted ? COLORS.accent
+                          : item.isToday ? COLORS.ink : COLORS.textBody)
+                    }
+                    .width(40).height(40).borderRadius(20)
+                    .justifyContent(FlexAlign.Center).alignItems(HorizontalAlign.Center)
+                    .backgroundColor(item.isPeriod ? COLORS.accent
+                      : item.isToday ? COLORS.pinkMist : 'transparent')
+                    .borderWidth(this.selectedCalDate === item.dateKey ? 2 : (item.isPredicted ? 2 : 0))
+                    .borderColor(this.selectedCalDate === item.dateKey ? COLORS.accent : COLORS.pinkBorder)
+                    .onClick(() => { this.selectDate(item.dateKey); })
 
-        if (this.allRecords().length === 0) {
-          Column({ space: 8 }) {
-            Text('No data yet').fontSize(18).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
-            Text('Start logging to see your trends here.').fontSize(14).fontColor(COLORS.floMuted).textAlign(TextAlign.Center)
-          }.width('100%').padding(32).borderRadius(20).backgroundColor(COLORS.surface)
-            .borderWidth(1).borderColor(COLORS.lineStrong)
-            .alignItems(HorizontalAlign.Center)
-        } else {
-          if (this.allRecords().length < 3) {
-            Column({ space: 10 }) {
-              Row() {
-                Column().width(`${Math.round((Math.min(this.allRecords().length, 3) / 3) * 100)}%`)
-                  .height(6).borderRadius(3).backgroundColor(COLORS.accent)
-              }.width('100%').height(6).borderRadius(3).backgroundColor(COLORS.pinkBorder)
-              Text(`${3 - this.allRecords().length} more record(s) needed for trend analysis`)
-                .fontSize(13).fontColor(COLORS.inkSecondary).textAlign(TextAlign.Center)
-            }.width('100%').padding(16).borderRadius(20).backgroundColor(COLORS.pinkMist)
-              .borderWidth(1).borderColor(COLORS.pinkBorder)
-          }
-
-          if (this.allRecords().length >= 3) {
-            Row({ space: 12 }) {
-              Column({ space: 2 }) {
-                Text(String(this.summary().averageCycleLength || 28)).fontSize(28).fontWeight(FontWeight.Bolder).fontColor(COLORS.floPink)
-                Text('days').fontSize(11).fontColor(COLORS.muted).fontWeight(FontWeight.Medium)
-                Text('Avg cycle').fontSize(12).fontColor(COLORS.inkSecondary).fontWeight(FontWeight.Medium)
-              }.layoutWeight(1).padding(16).borderRadius(20).backgroundColor(COLORS.surface)
-                .borderWidth(1).borderColor(COLORS.lineStrong).alignItems(HorizontalAlign.Center)
-              Column({ space: 2 }) {
-                Text(String(this.summary().averagePeriodLength || 5)).fontSize(28).fontWeight(FontWeight.Bolder).fontColor(COLORS.floPink)
-                Text('days').fontSize(11).fontColor(COLORS.muted).fontWeight(FontWeight.Medium)
-                Text('Avg period').fontSize(12).fontColor(COLORS.inkSecondary).fontWeight(FontWeight.Medium)
-              }.layoutWeight(1).padding(16).borderRadius(20).backgroundColor(COLORS.surface)
-                .borderWidth(1).borderColor(COLORS.lineStrong).alignItems(HorizontalAlign.Center)
+                    if (item.hasSymptoms && !item.isPeriod) {
+                      Column().width(6).height(6).borderRadius(3)
+                        .backgroundColor(COLORS.symptomDot).margin({ top: 4 })
+                    } else {
+                      Column().height(10)
+                    }
+                  }
+                }
+                .width('14.28%').alignItems(HorizontalAlign.Center).margin({ bottom: 8 })
+              }, (item: CalendarDayInfo) => item.key)
             }.width('100%')
           }
+          .width('100%').borderRadius(RADII.lg).backgroundColor(COLORS.surface)
+          .padding({ left: 10, right: 10, top: SPACING.md, bottom: SPACING.sm })
+          .borderWidth(1).borderColor(COLORS.lineStrong)
 
-          Column({ space: 12 }) {
-            Text('Flow distribution').fontSize(17).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
-            ForEach(this.buildFlowDistArkTs(), (item: FlowBarRow) => {
-              Row({ space: 12 }) {
-                Text(item.label).width(64).fontSize(13).fontWeight(FontWeight.Medium).fontColor(COLORS.inkSecondary)
-                Stack({ alignContent: Alignment.Start }) {
-                  Column().layoutWeight(1).height(12).borderRadius(6).backgroundColor(COLORS.neutralSoft)
-                  Column().width(`${item.percent}%`).height(12).borderRadius(6).backgroundColor(COLORS.accent)
-                }.layoutWeight(1).height(12)
-                Text(`${item.percent}%`).width(48).fontSize(12).fontWeight(FontWeight.Medium).fontColor(COLORS.muted).textAlign(TextAlign.End)
-              }.width('100%').alignItems(VerticalAlign.Center)
-            }, (item: FlowBarRow) => item.label)
-          }.cardStyle()
+          // Selected day detail card
+          this.SelectedDayDetail()
 
-          Column({ space: 12 }) {
-            Text('Recent records').fontSize(17).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
-            ForEach(this.recentRecords(), (r: CycleRecord, idx: number) => {
-              Row() {
-                Column({ space: 2 }) {
-                  Text(`${r.startDate.slice(0, 10)} → ${r.endDate.slice(0, 10)}`)
-                    .fontSize(14).fontWeight(FontWeight.Medium).fontColor(COLORS.floInk)
-                  Text(`${recordDurationDays(r)} days`).fontSize(11).fontColor(COLORS.muted)
-                }.layoutWeight(1).alignItems(HorizontalAlign.Start)
-                Text(formatFlowLabel(r.flowLevel))
-                  .fontSize(12).fontWeight(FontWeight.Medium).fontColor(COLORS.accent)
-                  .padding({ left: 10, right: 10, top: 4, bottom: 4 }).borderRadius(8).backgroundColor(COLORS.accentSoft)
-              }.width('100%').padding({ top: 10, bottom: 10 })
-                .border({ width: { bottom: idx < this.recentRecords().length - 1 ? 1 : 0 }, color: COLORS.divider })
-            }, (r: CycleRecord) => r.id)
-          }.cardStyle()
+          // Legend
+          Row({ space: SPACING.md }) {
+            Row({ space: 6 }) {
+              Column().width(10).height(10).borderRadius(5).backgroundColor(COLORS.accent)
+              Text(getCopy(this.lang).calendar.period).fontSize(FONT_SIZE.footnote).fontColor(COLORS.textBody)
+            }
+            Row({ space: 6 }) {
+              Column().width(10).height(10).borderRadius(5)
+                .borderWidth(2).borderColor(COLORS.pinkBorder)
+              Text(getCopy(this.lang).calendar.predicted).fontSize(FONT_SIZE.footnote).fontColor(COLORS.textBody)
+            }
+            Row({ space: 6 }) {
+              Column().width(10).height(10).borderRadius(5).backgroundColor(COLORS.symptomDot)
+              Text(getCopy(this.lang).calendar.symptoms).fontSize(FONT_SIZE.footnote).fontColor(COLORS.textBody)
+            }
+          }.width('100%').padding(SPACING.sm).borderRadius(RADII.md)
+            .backgroundColor(COLORS.pinkMist).borderWidth(1).borderColor(COLORS.pinkBorder)
         }
+        .width('100%').padding({ left: SPACING.md, right: SPACING.md, top: SPACING.md, bottom: 100 })
+      }.layoutWeight(1).scrollBar(BarState.Off)
+
+      // FAB
+      Button() {
+        Text('+').fontSize(28).fontWeight(FONT_WEIGHT.bold).fontColor(COLORS.surface)
       }
-      .width('100%').padding({ left: SPACING.lg, right: SPACING.lg, top: 18, bottom: SPACING.xxl })
+      .width(56).height(56).borderRadius(28)
+      .backgroundColor(COLORS.accent)
+      .margin({ right: SPACING.lg, bottom: SPACING.lg })
+      .onClick(() => {
+        const target = this.selectedCalDate || formatDateKey(new Date());
+        const rec = this.selectedCalDate === target ? this.selectedRecord : this.recordForDate(target);
+        this.openLog(target, rec?.id);
+      })
     }
+    .width('100%').height('100%')
   }
 
-  private buildFlowDistArkTs(): Array<FlowBarRow> {
-    const recs = this.allRecords();
-    let light = 0;
-    let medium = 0;
-    let heavy = 0;
-    recs.forEach((r: CycleRecord) => {
-      if (r.flowLevel === 'light') light++;
-      else if (r.flowLevel === 'medium') medium++;
-      else if (r.flowLevel === 'heavy') heavy++;
-    });
-    const total = recs.length || 1;
-    const result: Array<FlowBarRow> = [
-      { label: 'Light', percent: Math.round((light / total) * 100) },
-      { label: 'Medium', percent: Math.round((medium / total) * 100) },
-      { label: 'Heavy', percent: Math.round((heavy / total) * 100) }
-    ];
-    return result;
+  @Builder
+  private SelectedDayDetail() {
+    Column({ space: SPACING.xs }) {
+      Row() {
+        Text(formatFullDate(this.selectedCalDate, this.lang === 'zh'))
+          .fontSize(FONT_SIZE.subheading).fontWeight(FONT_WEIGHT.bold).fontColor(COLORS.ink)
+        Blank()
+        if (this.selectedCalDate === formatDateKey(new Date())) {
+          Text(this.lang === 'zh' ? '今天' : 'Today')
+            .fontSize(FONT_SIZE.caption).fontColor(COLORS.accent).fontWeight(FONT_WEIGHT.semibold)
+            .padding({ left: 8, right: 8, top: 3, bottom: 3 })
+            .borderRadius(10).backgroundColor(COLORS.accentSoft)
+        } else if (this.selectedIsPredicted) {
+          Text(this.lang === 'zh' ? '预测' : 'Predicted')
+            .fontSize(FONT_SIZE.caption).fontColor(COLORS.accent).fontWeight(FONT_WEIGHT.semibold)
+            .padding({ left: 8, right: 8, top: 3, bottom: 3 })
+            .borderRadius(10).backgroundColor(COLORS.accentSoft)
+        }
+      }.width('100%').alignItems(VerticalAlign.Center)
+
+      if (this.selectedRecord !== null) {
+        Row() {
+          Text(this.lang === 'zh' ? '流量' : 'Flow')
+            .fontSize(FONT_SIZE.footnote).fontColor(COLORS.muted)
+          Blank()
+          Text(this.flowOptionLabel(this.selectedRecord!.flowLevel))
+            .fontSize(FONT_SIZE.body).fontWeight(FONT_WEIGHT.semibold).fontColor(COLORS.ink)
+        }.width('100%')
+        Row() {
+          Text(this.lang === 'zh' ? '疼痛' : 'Pain')
+            .fontSize(FONT_SIZE.footnote).fontColor(COLORS.muted)
+          Blank()
+          Text(String(this.selectedRecord!.painLevel))
+            .fontSize(FONT_SIZE.body).fontWeight(FONT_WEIGHT.semibold).fontColor(COLORS.ink)
+        }.width('100%')
+        Row() {
+          Text(this.lang === 'zh' ? '心情' : 'Mood')
+            .fontSize(FONT_SIZE.footnote).fontColor(COLORS.muted)
+          Blank()
+          Text(formatMoodLabel(this.selectedRecord!.mood))
+            .fontSize(FONT_SIZE.body).fontWeight(FONT_WEIGHT.semibold).fontColor(COLORS.ink)
+        }.width('100%')
+        if ((this.selectedRecord!.symptoms ?? []).length > 0) {
+          Flex({ wrap: FlexWrap.Wrap }) {
+            ForEach(this.selectedRecord!.symptoms ?? [], (s: string) => {
+              Text(formatSymptomLabel(s, this.lang === 'zh'))
+                .fontSize(FONT_SIZE.caption).fontWeight(FONT_WEIGHT.medium).fontColor(COLORS.inkSecondary)
+                .padding({ left: 8, right: 8, top: 3, bottom: 3 })
+                .borderRadius(10).backgroundColor(COLORS.chipIdle)
+                .margin({ right: 6, bottom: 6 })
+            }, (s: string) => s)
+          }.width('100%')
+        }
+        Button(this.lang === 'zh' ? '编辑记录' : 'Edit log')
+          .height(40).borderRadius(20)
+          .backgroundColor(COLORS.chipIdle).fontColor(COLORS.ink)
+          .fontSize(FONT_SIZE.metaLabel).fontWeight(FONT_WEIGHT.semibold)
+          .padding({ left: SPACING.lg, right: SPACING.lg })
+          .onClick(() => {
+            if (this.selectedRecord) {
+              this.openLog(this.selectedCalDate, this.selectedRecord.id);
+            }
+          })
+      } else {
+        Text(this.lang === 'zh' ? '本日无记录' : 'No log for this day')
+          .fontSize(FONT_SIZE.body).fontColor(COLORS.muted).width('100%')
+        Button(this.lang === 'zh' ? '添加记录' : 'Add log')
+          .height(40).borderRadius(20)
+          .backgroundColor(COLORS.accent).fontColor(COLORS.surface)
+          .fontSize(FONT_SIZE.metaLabel).fontWeight(FONT_WEIGHT.semibold)
+          .padding({ left: SPACING.lg, right: SPACING.lg })
+          .onClick(() => { this.openLog(this.selectedCalDate); })
+      }
+    }
+    .width('100%').padding(SPACING.md).borderRadius(RADII.lg)
+    .backgroundColor(COLORS.surface).borderWidth(1).borderColor(COLORS.lineStrong)
+    .alignItems(HorizontalAlign.Start)
   }
 
   /* ─── Builder: Settings Tab ─── */
   @Builder
   private SettingsTab() {
     Scroll() {
-      Column({ space: 18 }) {
-        Column({ space: 4 }) {
-          Text('Settings').fontSize(24).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
-          Text('Keep preferences, reminders, and privacy in one place.')
-            .fontSize(14).lineHeight(20).fontColor(COLORS.floMuted)
+      Column({ space: SPACING.sm }) {
+        Column() {
+          Text(getCopy(this.lang).settings.title)
+            .fontSize(FONT_SIZE.heading).fontWeight(FONT_WEIGHT.bold).fontColor(COLORS.ink)
         }.width('100%').alignItems(HorizontalAlign.Start)
 
-        // Cycle stepper
-        Column({ space: 14 }) {
-          Row() {
-            Text('Average cycle length').fontSize(16).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
-            Blank()
-            Text(`${this.cycleLength} days`).fontSize(18).fontWeight(FontWeight.Bold).fontColor(COLORS.floPink)
-          }.width('100%')
-          Row({ space: 12 }) {
-            Button('-').type(ButtonType.Circle).width(42).height(42)
-              .backgroundColor(COLORS.neutralSoft).fontColor(COLORS.floInk).fontSize(24)
-              .onClick(() => { if (this.cycleLength > 20) this.cycleLength -= 1; })
-            Column().layoutWeight(1).height(10).borderRadius(999).backgroundColor(COLORS.neutralSoft)
-            Column()
-              .width(`${clampProgress(this.cycleLength, 20, 45)}%`)
-              .height(10).borderRadius(999).backgroundColor(COLORS.floPink)
-              .margin({ left: -this.cycleLength })  // overlay hack — use stack in prod
-            Button('+').type(ButtonType.Circle).width(42).height(42)
-              .backgroundColor(COLORS.neutralSoft).fontColor(COLORS.floInk).fontSize(24)
-              .onClick(() => { if (this.cycleLength < 45) this.cycleLength += 1; })
-          }.width('100%').alignItems(VerticalAlign.Center)
-        }.cardStyle()
+        // Cycle length card
+        this.CycleLengthCard()
 
-        // Period stepper
-        Column({ space: 14 }) {
-          Row() {
-            Text('Average period length').fontSize(16).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
-            Blank()
-            Text(`${this.periodLength} days`).fontSize(18).fontWeight(FontWeight.Bold).fontColor(COLORS.floPink)
-          }.width('100%')
-          Row({ space: 12 }) {
-            Button('-').type(ButtonType.Circle).width(42).height(42)
-              .backgroundColor(COLORS.neutralSoft).fontColor(COLORS.floInk).fontSize(24)
-              .onClick(() => { if (this.periodLength > 2) this.periodLength -= 1; })
-            Column().layoutWeight(1).height(10).borderRadius(999).backgroundColor(COLORS.neutralSoft)
-            Button('+').type(ButtonType.Circle).width(42).height(42)
-              .backgroundColor(COLORS.neutralSoft).fontColor(COLORS.floInk).fontSize(24)
-              .onClick(() => { if (this.periodLength < 10) this.periodLength += 1; })
-          }.width('100%').alignItems(VerticalAlign.Center)
-        }.cardStyle()
+        // Period length card
+        this.PeriodLengthCard()
+
+        // Trends navigation card
+        Row() {
+          Text(getCopy(this.lang).trends.title)
+            .fontSize(FONT_SIZE.subheading).fontWeight(FONT_WEIGHT.bold).fontColor(COLORS.ink)
+            .layoutWeight(1)
+          Text('›').fontSize(22).fontColor(COLORS.muted)
+        }
+        .width('100%').padding(SPACING.md).borderRadius(RADII.lg)
+        .backgroundColor(COLORS.surface).borderWidth(1).borderColor(COLORS.lineStrong)
+        .alignItems(VerticalAlign.Center)
+        .onClick(() => this.openTrends())
 
         // Reminders card
-        Column({ space: 14 }) {
-          Text('Reminders & quiet hours').fontSize(17).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
-          Text('Configure reminder preferences and quiet hours for gentle notifications.')
-            .fontSize(14).lineHeight(21).fontColor(COLORS.textBody)
-        }.cardStyle()
+        Column() {
+          Text(getCopy(this.lang).settings.remindersTitle)
+            .fontSize(FONT_SIZE.subheading).fontWeight(FONT_WEIGHT.bold).fontColor(COLORS.ink)
+        }
+        .width('100%').padding(SPACING.md).borderRadius(RADII.lg)
+        .backgroundColor(COLORS.surface).borderWidth(1).borderColor(COLORS.lineStrong)
+        .alignItems(HorizontalAlign.Start)
 
         // Privacy card
-        Column({ space: 14 }) {
+        Column({ space: SPACING.sm }) {
           Row() {
-            Text('Privacy & data').fontSize(17).fontWeight(FontWeight.Bold).fontColor(COLORS.floInk)
+            Text(getCopy(this.lang).settings.privacyTitle)
+              .fontSize(FONT_SIZE.subheading).fontWeight(FONT_WEIGHT.bold).fontColor(COLORS.ink)
             Blank()
             Text('›').fontSize(22).fontColor(COLORS.muted)
           }.width('100%')
-          Text('Manage consent toggles, export log, and delete account.')
-            .fontSize(14).lineHeight(21).fontColor(COLORS.textBody)
-          Row({ space: 12 }) {
-            Button('Export data')
-              .layoutWeight(1).height(48).borderRadius(16)
+          Row({ space: SPACING.sm }) {
+            Button(getCopy(this.lang).settings.exportBtn)
+              .layoutWeight(1).height(44).borderRadius(RADII.md)
               .backgroundColor(COLORS.ink).fontColor(COLORS.surface)
-              .fontSize(15).fontWeight(FontWeight.Bold)
+              .fontSize(FONT_SIZE.metaLabel).fontWeight(FONT_WEIGHT.bold)
               .onClick(async () => {
-                try { await api.exportData(); } catch { /* silent */ }
+                try { await api.exportData(); } catch (_) { /* silent */ }
               })
-            Button('Delete account')
-              .layoutWeight(1).height(48).borderRadius(16)
+            Button(getCopy(this.lang).settings.deleteBtn)
+              .layoutWeight(1).height(44).borderRadius(RADII.md)
               .backgroundColor(COLORS.pinkMist).fontColor(COLORS.accentDeep)
-              .fontSize(15).fontWeight(FontWeight.Bold)
+              .fontSize(FONT_SIZE.metaLabel).fontWeight(FONT_WEIGHT.bold)
               .borderWidth(1).borderColor(COLORS.pinkBorder)
               .onClick(async () => {
-                try { await api.deleteAccount(); this.refreshDashboard(); } catch { /* silent */ }
+                try { await api.deleteAccount(); this.refreshDashboard(); } catch (_) { /* silent */ }
               })
           }.width('100%')
         }
-        .cardStyle()
-        .onClick(() => router.pushUrl({ url: 'pages/Privacy' }))
+        .width('100%').padding(SPACING.md).borderRadius(RADII.lg)
+        .backgroundColor(COLORS.surface).borderWidth(1).borderColor(COLORS.lineStrong)
+        .alignItems(HorizontalAlign.Start)
+        .onClick(() => this.openPrivacy())
       }
-      .width('100%').padding({ left: SPACING.lg, right: SPACING.lg, top: 18, bottom: SPACING.xxl })
+      .width('100%').padding({ left: SPACING.md, right: SPACING.md, top: SPACING.md, bottom: SPACING.xxl })
     }
-  }
-
-  build() {
-    Tabs({ barPosition: BarPosition.End, index: this.currentTab }) {
-      TabContent() {
-        this.HomeTab()
-      }.tabBar(this.TabItem('Home', 0))
-
-      TabContent() {
-        this.CalendarTab()
-      }.tabBar(this.TabItem('Calendar', 1))
-
-      TabContent() {
-        this.RecordTab()
-      }.tabBar(this.TabItem('Log', 2))
-
-      TabContent() {
-        this.TrendsTab()
-      }.tabBar(this.TabItem('Trends', 3))
-
-      TabContent() {
-        this.SettingsTab()
-      }.tabBar(this.TabItem('Settings', 4))
-    }
-    .onChange((index: number) => { this.currentTab = index; })
-    .barHeight(72)
-    .backgroundColor(COLORS.page)
   }
 
   @Builder
-  private TabItem(label: string, index: number) {
+  private CycleLengthCard() {
+    Column({ space: SPACING.xs }) {
+      Row() {
+        Text(getCopy(this.lang).settings.cycleLen)
+          .fontSize(FONT_SIZE.subheading).fontWeight(FONT_WEIGHT.bold).fontColor(COLORS.ink)
+        Blank()
+        Text(`${this.summary().recordCount >= AUTO_COMPUTE_THRESHOLD && this.summary().averageCycleLength > 0 ? this.summary().averageCycleLength : this.cycleLength} ${getCopy(this.lang).settings.daysUnit}`)
+          .fontSize(FONT_SIZE.title).fontWeight(FONT_WEIGHT.bold).fontColor(COLORS.accent)
+      }.width('100%')
+
+      if (this.summary().recordCount >= AUTO_COMPUTE_THRESHOLD && this.summary().averageCycleLength > 0) {
+        Row({ space: 6 }) {
+          Text('✦').fontSize(FONT_SIZE.footnote).fontColor(COLORS.accent)
+          Text(this.lang === 'zh'
+            ? `基于你的 ${this.summary().recordCount} 条记录自动计算`
+            : `Auto-computed from your ${this.summary().recordCount} records`)
+            .fontSize(FONT_SIZE.footnote).fontColor(COLORS.accentDeep).fontWeight(FONT_WEIGHT.semibold)
+        }
+        .padding({ left: SPACING.sm, right: SPACING.sm, top: 6, bottom: 6 })
+        .borderRadius(RADII.md).backgroundColor(COLORS.pinkMist)
+        .borderWidth(1).borderColor(COLORS.pinkBorder)
+        .alignItems(VerticalAlign.Center)
+      } else {
+        Row({ space: SPACING.sm }) {
+          Button('-')
+            .type(ButtonType.Circle).width(48).height(48)
+            .backgroundColor(COLORS.chipIdle).fontColor(COLORS.ink)
+            .fontSize(24).fontWeight(FONT_WEIGHT.bold)
+            .onClick(() => {
+              if (this.cycleLength > 20) { this.cycleLength -= 1; this.rebuildCalendar(); }
+            })
+
+          Stack({ alignContent: Alignment.Start }) {
+            Column().width('100%').height(10).borderRadius(5).backgroundColor(COLORS.chipIdle)
+            Column()
+              .width(`${clampProgress(this.cycleLength, 20, 45)}%`)
+              .height(10).borderRadius(5).backgroundColor(COLORS.accent)
+            Column().width(24).height(24).borderRadius(12)
+              .backgroundColor(COLORS.surface)
+              .borderWidth(3).borderColor(COLORS.accent)
+              .margin({ left: `${clampProgress(this.cycleLength, 20, 45)}%`, top: -7 })
+          }.layoutWeight(1).height(24)
+
+          Button('+')
+            .type(ButtonType.Circle).width(48).height(48)
+            .backgroundColor(COLORS.chipIdle).fontColor(COLORS.ink)
+            .fontSize(24).fontWeight(FONT_WEIGHT.bold)
+            .onClick(() => {
+              if (this.cycleLength < 45) { this.cycleLength += 1; this.rebuildCalendar(); }
+            })
+        }.width('100%').alignItems(VerticalAlign.Center)
+
+        Text(this.lang === 'zh'
+          ? '初始设置值，有足够记录后将自动计算'
+          : 'Starting value — updates automatically once you have enough records')
+          .fontSize(FONT_SIZE.footnote).fontColor(COLORS.muted).width('100%')
+      }
+    }
+    .width('100%').padding(SPACING.md).borderRadius(RADII.lg)
+    .backgroundColor(COLORS.surface).borderWidth(1).borderColor(COLORS.lineStrong)
+    .alignItems(HorizontalAlign.Start)
+  }
+
+  @Builder
+  private PeriodLengthCard() {
+    Column({ space: SPACING.xs }) {
+      Row() {
+        Text(getCopy(this.lang).settings.periodLen)
+          .fontSize(FONT_SIZE.subheading).fontWeight(FONT_WEIGHT.bold).fontColor(COLORS.ink)
+        Blank()
+        Text(`${this.summary().recordCount >= AUTO_COMPUTE_THRESHOLD && this.summary().averagePeriodLength > 0 ? this.summary().averagePeriodLength : this.periodLength} ${getCopy(this.lang).settings.daysUnit}`)
+          .fontSize(FONT_SIZE.title).fontWeight(FONT_WEIGHT.bold).fontColor(COLORS.accent)
+      }.width('100%')
+
+      if (this.summary().recordCount >= AUTO_COMPUTE_THRESHOLD && this.summary().averagePeriodLength > 0) {
+        Row({ space: 6 }) {
+          Text('✦').fontSize(FONT_SIZE.footnote).fontColor(COLORS.accent)
+          Text(this.lang === 'zh'
+            ? `基于你的 ${this.summary().recordCount} 条记录自动计算`
+            : `Auto-computed from your ${this.summary().recordCount} records`)
+            .fontSize(FONT_SIZE.footnote).fontColor(COLORS.accentDeep).fontWeight(FONT_WEIGHT.semibold)
+        }
+        .padding({ left: SPACING.sm, right: SPACING.sm, top: 6, bottom: 6 })
+        .borderRadius(RADII.md).backgroundColor(COLORS.pinkMist)
+        .borderWidth(1).borderColor(COLORS.pinkBorder)
+        .alignItems(VerticalAlign.Center)
+      } else {
+        Row({ space: SPACING.sm }) {
+          Button('-')
+            .type(ButtonType.Circle).width(48).height(48)
+            .backgroundColor(COLORS.chipIdle).fontColor(COLORS.ink)
+            .fontSize(24).fontWeight(FONT_WEIGHT.bold)
+            .onClick(() => {
+              if (this.periodLength > 2) { this.periodLength -= 1; this.rebuildCalendar(); }
+            })
+
+          Stack({ alignContent: Alignment.Start }) {
+            Column().width('100%').height(10).borderRadius(5).backgroundColor(COLORS.chipIdle)
+            Column()
+              .width(`${clampProgress(this.periodLength, 2, 10)}%`)
+              .height(10).borderRadius(5).backgroundColor(COLORS.accent)
+            Column().width(24).height(24).borderRadius(12)
+              .backgroundColor(COLORS.surface)
+              .borderWidth(3).borderColor(COLORS.accent)
+              .margin({ left: `${clampProgress(this.periodLength, 2, 10)}%`, top: -7 })
+          }.layoutWeight(1).height(24)
+
+          Button('+')
+            .type(ButtonType.Circle).width(48).height(48)
+            .backgroundColor(COLORS.chipIdle).fontColor(COLORS.ink)
+            .fontSize(24).fontWeight(FONT_WEIGHT.bold)
+            .onClick(() => {
+              if (this.periodLength < 10) { this.periodLength += 1; this.rebuildCalendar(); }
+            })
+        }.width('100%').alignItems(VerticalAlign.Center)
+
+        Text(this.lang === 'zh'
+          ? '初始设置值，有足够记录后将自动计算'
+          : 'Starting value — updates automatically once you have enough records')
+          .fontSize(FONT_SIZE.footnote).fontColor(COLORS.muted).width('100%')
+      }
+    }
+    .width('100%').padding(SPACING.md).borderRadius(RADII.lg)
+    .backgroundColor(COLORS.surface).borderWidth(1).borderColor(COLORS.lineStrong)
+    .alignItems(HorizontalAlign.Start)
+  }
+
+  build() {
+    Column() {
+      this.HomeTab()
+    }
+    .width('100%')
+    .height('100%')
+    .backgroundColor(COLORS.bg)
+  }
+
+  @Builder
+  private TabItem(label: string, icon: string, index: number) {
     Column({ space: 4 }) {
-      Text(label === 'Home' ? '🏠' : label === 'Calendar' ? '📅' : label === 'Log' ? '✏️' : label === 'Trends' ? '📊' : '⚙️')
-        .fontSize(20)
+      Text(icon).fontSize(20)
       Text(label)
-        .fontSize(12).fontWeight(FontWeight.Medium)
-        .fontColor(this.currentTab === index ? COLORS.primary : COLORS.floMuted)
+        .fontSize(FONT_SIZE.footnote).fontWeight(FONT_WEIGHT.medium)
+        .fontColor(this.currentTab === index ? COLORS.accent : COLORS.muted)
     }
     .width('100%').height(60).justifyContent(FlexAlign.Center).alignItems(HorizontalAlign.Center)
   }
-}
-
-@Extend(Column)
-function cardStyle() {
-  .width('100%')
-  .borderRadius(20)
-  .backgroundColor(COLORS.surface)
-  .borderWidth(1)
-  .borderColor(COLORS.lineStrong)
-  .padding(18)
 }

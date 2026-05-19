@@ -1,93 +1,82 @@
 <view class="screen settings-screen">
   <text class="page-title">{{copy.title}}</text>
 
-  <!-- Section: Cycle parameters -->
-  <text class="section-label">{{copy.cycleParamSection}}</text>
+  <!-- Cycle length: auto-only (没记录时空态) -->
   <view class="param-card">
-    <view class="param-row">
-      <text class="param-name">{{copy.cycleLengthLabel}}</text>
-      <view class="stepper">
-        <view class="stepper-btn" bindtap="decreaseCycle"><text class="stepper-icon">−</text></view>
-        <text class="stepper-num">{{cycleLength}}</text>
-        <view class="stepper-btn" bindtap="increaseCycle"><text class="stepper-icon">+</text></view>
+    <text class="param-label">{{copy.cycleLengthLabel}}</text>
+    <block wx:if="{{isAutoComputed}}">
+      <view class="param-auto-row">
+        <text class="param-auto-value">{{cycleLength}}</text>
+        <text class="param-auto-unit">{{copy.dayUnit}}</text>
       </view>
-    </view>
-    <view class="param-divider"></view>
-    <view class="param-row">
-      <text class="param-name">{{copy.periodLengthLabel}}</text>
-      <view class="stepper">
-        <view class="stepper-btn" bindtap="decreasePeriod"><text class="stepper-icon">−</text></view>
-        <text class="stepper-num">{{periodLength}}</text>
-        <view class="stepper-btn" bindtap="increasePeriod"><text class="stepper-icon">+</text></view>
-      </view>
-    </view>
-  </view>
-
-  <!-- Section: Reminders -->
-  <text class="section-label">{{copy.reminderSection}}</text>
-  <view class="reminder-card" wx:if="{{hasPreference}}">
-    <block wx:for="{{reminderViews}}" wx:key="type">
-      <view class="reminder-row">
-        <view class="reminder-left">
-          <text class="reminder-name">{{item.label}}</text>
-          <text class="reminder-detail" wx:if="{{item.enabled}}">{{item.detail}}</text>
-        </view>
-        <switch
-          class="reminder-switch"
-          checked="{{item.enabled}}"
-          color="#FF4D6A"
-          data-type="{{item.type}}"
-          bindchange="toggleItem"
-        />
-      </view>
-      <!-- Lead days: sub-option of period_due -->
-      <view class="lead-days-row" wx:if="{{item.type === 'period_due' && item.enabled}}">
-        <text class="lead-days-label">{{copy.leadDaysLabel}}</text>
-        <view class="chip-row">
-          <view
-            class="day-chip {{leadDays === 1 ? 'day-chip-active' : ''}}"
-            data-days="1"
-            bindtap="setLeadDays"
-          >1{{copy.dayBefore}}</view>
-          <view
-            class="day-chip {{leadDays === 2 ? 'day-chip-active' : ''}}"
-            data-days="2"
-            bindtap="setLeadDays"
-          >2{{copy.dayBefore}}</view>
-          <view
-            class="day-chip {{leadDays === 3 ? 'day-chip-active' : ''}}"
-            data-days="3"
-            bindtap="setLeadDays"
-          >3{{copy.dayBefore}}</view>
-        </view>
+      <view class="auto-badge">
+        <text class="auto-badge-glyph">✦</text>
+        <text class="auto-badge-text">{{copy.autoBadgePrefix}}{{recordCount}}{{copy.autoBadgeSuffix}}</text>
       </view>
     </block>
+    <block wx:else>
+      <view class="param-auto-row">
+        <text class="param-auto-value param-auto-value-pending">—</text>
+        <text class="param-auto-unit">{{copy.dayUnit}}</text>
+      </view>
+      <text class="param-hint">{{copy.pendingHint}}</text>
+    </block>
+  </view>
 
-    <view class="reminder-divider"></view>
+  <!-- Period length: auto-only -->
+  <view class="param-card">
+    <text class="param-label">{{copy.periodLengthLabel}}</text>
+    <block wx:if="{{isAutoComputed}}">
+      <view class="param-auto-row">
+        <text class="param-auto-value">{{periodLength}}</text>
+        <text class="param-auto-unit">{{copy.dayUnit}}</text>
+      </view>
+      <view class="auto-badge">
+        <text class="auto-badge-glyph">✦</text>
+        <text class="auto-badge-text">{{copy.autoBadgePrefix}}{{recordCount}}{{copy.autoBadgeSuffix}}</text>
+      </view>
+    </block>
+    <block wx:else>
+      <view class="param-auto-row">
+        <text class="param-auto-value param-auto-value-pending">—</text>
+        <text class="param-auto-unit">{{copy.dayUnit}}</text>
+      </view>
+      <text class="param-hint">{{copy.pendingHint}}</text>
+    </block>
+  </view>
 
-    <!-- Quiet hours -->
-    <view class="quiet-row">
-      <text class="reminder-name">{{copy.quietHoursLabel}}</text>
-      <view class="quiet-times">
-        <picker mode="time" value="{{quietStart}}" bindchange="changeQuietStart">
-          <text class="quiet-time">{{quietStart}}</text>
-        </picker>
-        <text class="quiet-sep">-</text>
-        <picker mode="time" value="{{quietEnd}}" bindchange="changeQuietEnd">
-          <text class="quiet-time">{{quietEnd}}</text>
-        </picker>
+  <!-- Section: Reminders summary (对标 mobile reminders & quiet hours summary card) -->
+  <view class="summary-card" bindtap="openReminders">
+    <view class="summary-head">
+      <text class="summary-title">{{copy.reminderSummaryTitle}}</text>
+      <view class="summary-arrow">
+        <text class="summary-arrow-glyph">›</text>
+      </view>
+    </view>
+    <text class="summary-body">{{reminderSummaryText}}</text>
+  </view>
+
+  <!-- Section: Trends summary -->
+  <view class="summary-card" bindtap="openTrends">
+    <view class="summary-head">
+      <text class="summary-title">{{copy.trendsTitle}}</text>
+      <view class="summary-arrow">
+        <text class="summary-arrow-glyph">›</text>
       </view>
     </view>
   </view>
 
   <!-- Section: Privacy & data -->
-  <text class="section-label">{{copy.privacySection}}</text>
   <view class="privacy-card">
-    <text class="privacy-body">{{copy.privacyBody}}</text>
-    <button class="export-btn" bindtap="exportData">{{copy.exportLabel}}</button>
-  </view>
-
-  <view class="delete-link-wrap" bindtap="deleteAccount">
-    <text class="delete-link">{{copy.deleteLabel}}</text>
+    <view class="privacy-head">
+      <text class="privacy-title">{{copy.privacyTitle}}</text>
+      <view class="privacy-arrow" bindtap="openPrivacy">
+        <text class="privacy-arrow-glyph">›</text>
+      </view>
+    </view>
+    <view class="privacy-actions">
+      <button class="privacy-btn privacy-btn-primary" bindtap="exportData">{{copy.exportLabel}}</button>
+      <button class="privacy-btn privacy-btn-danger" bindtap="deleteAccount">{{copy.deleteLabel}}</button>
+    </view>
   </view>
 </view>

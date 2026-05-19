@@ -16,7 +16,19 @@ tmp/
 .tmp-*/
 *.zip
 test-root.tmp
-apps/mobile/
 .tooling/
 
 apps/miniapp/src/**/*.js
+
+# Personal dev journal (kept local only)
+review.md
+review.docx
+scripts/generate-review-doc.py
+
+# Harmony signing materials — provide your own; never commit credentials
+apps/harmony/signing/
+apps/harmony/build-profile.json5
+*.v6bak
+
+# Stray nested directory from past tooling glitch
+apps/harmony/apps/

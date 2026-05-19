@@ -1,4 +1,6 @@
 import type {
+  AIInterpretationRequest,
+  AIInterpretationSnapshot,
   ConsentRecord,
   ConsentType,
   CycleRecordInput,
@@ -100,6 +102,9 @@ export const api = {
   },
   deleteRecord(id: string): Promise<DashboardResponse> {
     return request(`/cycles/${id}`, "DELETE");
+  },
+  requestAIInterpretation(payload: AIInterpretationRequest = {}): Promise<AIInterpretationSnapshot> {
+    return request("/cycles/ai-interpretation", "POST", payload);
   },
   getReminderPreferences(): Promise<ReminderPreferenceResponse> {
     return request("/reminders/preferences", "GET");

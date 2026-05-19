@@ -1,232 +1,271 @@
 .settings-screen {
-  gap: 16rpx;
+  gap: 24rpx;
 }
 
-/* ── Section labels ── */
-.section-label {
-  display: block;
-  color: var(--muted);
-  font-size: 24rpx;
-  font-weight: 600;
-  letter-spacing: 6rpx;
-  margin-top: 8rpx;
-}
-
-/* ── Param card ── */
+/* ── Param card (对标 mobile stepperCard / autoCard) ── */
 .param-card {
   border-radius: 40rpx;
   background: var(--surface);
-  border: 1rpx solid rgba(0, 0, 0, 0.03);
+  border: 1rpx solid var(--line-strong);
   box-shadow: var(--shadow-card);
-  padding: 0 32rpx;
+  padding: 32rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
 }
 
+.param-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.param-label {
+  color: var(--ink);
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.param-value {
+  color: var(--accent);
+  font-size: 40rpx;
+  font-weight: 700;
+}
+
+/* manual stepper row */
 .param-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  min-height: 104rpx;
+  gap: 24rpx;
 }
 
-.param-name {
-  color: var(--ink);
-  font-size: 30rpx;
-  font-weight: 600;
-}
-
-.param-divider {
-  height: 1rpx;
-  background: rgba(0, 0, 0, 0.04);
-}
-
-.stepper {
-  display: flex;
-  align-items: center;
-  gap: 20rpx;
-}
-
-.stepper-btn {
-  width: 72rpx;
-  height: 72rpx;
-  border-radius: 36rpx;
-  background: var(--surface-sunken);
+.param-btn {
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 48rpx;
+  background: var(--chip-idle);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.stepper-btn:active {
+.param-btn:active {
   background: var(--pink-pale);
 }
 
-.stepper-icon {
+.param-btn-glyph {
   color: var(--ink);
-  font-size: 40rpx;
-  font-weight: 600;
-  line-height: 44rpx;
+  font-size: 52rpx;
+  line-height: 52rpx;
+  font-weight: 700;
 }
 
-.stepper-num {
-  color: var(--accent);
-  font-size: 40rpx;
-  font-weight: 800;
-  min-width: 56rpx;
-  text-align: center;
-}
-
-/* ── Reminder card ── */
-.reminder-card {
-  border-radius: 40rpx;
-  background: var(--surface);
-  border: 1rpx solid rgba(0, 0, 0, 0.03);
-  box-shadow: var(--shadow-card);
-  padding: 4rpx 32rpx 20rpx;
-}
-
-.reminder-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 96rpx;
-  border-bottom: 1rpx solid rgba(0, 0, 0, 0.04);
-}
-
-.reminder-left {
+.param-track {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2rpx;
+  height: 20rpx;
+  border-radius: 9999rpx;
+  background: var(--chip-idle);
+  position: relative;
 }
 
-.reminder-name {
-  color: var(--ink);
-  font-size: 30rpx;
-  font-weight: 600;
+.param-track-fill {
+  height: 100%;
+  border-radius: 9999rpx;
+  background: var(--accent);
 }
 
-.reminder-detail {
+.param-track-thumb {
+  position: absolute;
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 24rpx;
+  background: var(--accent);
+  top: -14rpx;
+  margin-left: -24rpx;
+  border: 6rpx solid #FFFFFF;
+  box-shadow: 0rpx 4rpx 8rpx rgba(0, 0, 0, 0.2);
+}
+
+.param-hint {
   color: var(--muted);
-  font-size: 22rpx;
-}
-
-.reminder-switch {
-  transform: scale(0.85);
-}
-
-.reminder-divider {
-  height: 1rpx;
-  background: rgba(0, 0, 0, 0.04);
-}
-
-/* ── Lead days ── */
-.lead-days-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12rpx 0 12rpx 24rpx;
-  border-bottom: 1rpx solid rgba(0, 0, 0, 0.04);
-}
-
-.lead-days-label {
-  color: var(--muted);
-  font-size: 26rpx;
+  font-size: 24rpx;
   font-weight: 500;
+  line-height: 1.4;
 }
 
-.chip-row {
+/* auto mode */
+.param-auto-row {
   display: flex;
+  flex-direction: row;
+  align-items: baseline;
   gap: 12rpx;
 }
 
-.day-chip {
-  min-width: 96rpx;
+.param-auto-value {
+  color: var(--accent);
+  font-size: 64rpx;
+  line-height: 72rpx;
+  font-weight: 800;
+}
+
+.param-auto-value-pending {
+  color: var(--muted-soft);
+}
+
+.param-auto-unit {
+  color: var(--ink-body);
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+.auto-badge {
+  align-self: flex-start;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12rpx;
+  padding: 8rpx 24rpx;
+  border-radius: 24rpx;
+  background: var(--pink-mist);
+  border: 1rpx solid var(--pink-border);
+}
+
+.auto-badge-glyph {
+  color: var(--accent-deep);
+  font-size: 22rpx;
+  line-height: 22rpx;
+}
+
+.auto-badge-text {
+  color: var(--accent-deep);
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+/* ── Reminders summary card (对标 mobile 折叠条目) ── */
+.summary-card {
+  border-radius: 40rpx;
+  background: var(--surface);
+  border: 1rpx solid var(--line-strong);
+  box-shadow: var(--shadow-card);
+  padding: 32rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  margin-top: 8rpx;
+}
+
+.summary-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.summary-title {
+  color: var(--ink);
+  font-size: 34rpx;
+  font-weight: 700;
+}
+
+.summary-arrow {
+  width: 56rpx;
   height: 56rpx;
   border-radius: 28rpx;
-  background: var(--surface-sunken);
-  color: var(--ink-2);
-  font-size: 24rpx;
-  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.day-chip-active {
-  background: var(--accent-soft);
-  color: var(--accent);
+.summary-arrow-glyph {
+  color: var(--muted);
+  font-size: 40rpx;
+  line-height: 40rpx;
+  font-weight: 500;
 }
 
-/* ── Quiet hours ── */
-.quiet-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16rpx 0 8rpx;
-}
-
-.quiet-times {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-}
-
-.quiet-time {
-  color: var(--ink);
-  font-size: 30rpx;
-  font-weight: 600;
-}
-
-.quiet-sep {
-  color: var(--muted-2);
+.summary-body {
+  color: var(--ink-body);
   font-size: 28rpx;
+  line-height: 1.5;
+  font-weight: 500;
 }
 
-/* ── Privacy card ── */
+/* ── Privacy card (对标 mobile settings 隐私卡) ── */
 .privacy-card {
   border-radius: 40rpx;
   background: var(--surface);
-  border: 1rpx solid rgba(0, 0, 0, 0.03);
+  border: 1rpx solid var(--line-strong);
   box-shadow: var(--shadow-card);
-  padding: 28rpx 32rpx;
+  padding: 32rpx;
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
+  gap: 24rpx;
+  margin-top: 8rpx;
+  margin-bottom: 48rpx;
 }
 
-.privacy-body {
+.privacy-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.privacy-title {
+  color: var(--ink);
+  font-size: 34rpx;
+  font-weight: 700;
+}
+
+.privacy-arrow {
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 28rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.privacy-arrow:active {
+  background: var(--surface-sunken);
+}
+
+.privacy-arrow-glyph {
   color: var(--muted);
-  font-size: 26rpx;
+  font-size: 40rpx;
   line-height: 40rpx;
+  font-weight: 500;
 }
 
-.export-btn {
-  width: 100%;
-  min-height: 88rpx;
-  border-radius: 44rpx;
-  background: var(--pink-mist);
-  color: var(--accent);
+.privacy-actions {
+  display: flex;
+  flex-direction: row;
+  gap: 24rpx;
+}
+
+.privacy-btn {
+  flex: 1;
+  min-height: 96rpx;
+  line-height: 96rpx;
+  border-radius: 24rpx;
   font-size: 30rpx;
   font-weight: 700;
-  line-height: 88rpx;
   text-align: center;
-  border: none;
   padding: 0;
-}
-
-.export-btn::after {
+  margin: 0;
   border: none;
 }
 
-/* ── Delete link ── */
-.delete-link-wrap {
-  display: flex;
-  justify-content: center;
-  padding: 24rpx 0 48rpx;
+.privacy-btn::after {
+  border: none;
 }
 
-.delete-link {
-  color: #E53E3E;
-  font-size: 24rpx;
-  font-weight: 500;
-  opacity: 0.5;
+.privacy-btn-primary {
+  background: var(--ink);
+  color: #FFFFFF;
+}
+
+.privacy-btn-danger {
+  background: var(--pink-mist);
+  color: var(--accent-deep);
+  border: 1rpx solid var(--pink-border);
 }

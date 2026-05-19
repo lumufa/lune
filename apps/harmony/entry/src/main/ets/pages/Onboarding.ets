@@ -1,11 +1,14 @@
 import router from '@ohos.router';
 import promptAction from '@ohos.promptAction';
-import { common } from '@kit.AbilityKit';
+import common from '@ohos.app.ability.common';
 import { api } from '../common/ApiClient';
 import { COLORS, FONT_SIZE, FONT_WEIGHT, RADII, SHADOWS, SPACING } from '../common/DesignTokens';
 import { OnboardingStorage } from '../common/OnboardingStorage';
+import { AppCopy, DEFAULT_LANGUAGE, LANGUAGE_KEY, getCopy, getLanguageToggleLabel, getNextLanguage } from '../common/I18n';
 
 const CONSENT_VERSION: string = '2026.03';
+const FEATURE_ICONS: Array<string> = ['📅', '✅', '🔔'];
+const TRUST_ICONS: Array<string> = ['🔒', '📱', '🚫', '🧹'];
 
 interface FeatureItem {
   icon: string;
@@ -17,24 +20,36 @@ interface TrustItem {
   label: string;
 }
 
+function __initLangStorage(): string {
+  if (!AppStorage.Has(LANGUAGE_KEY)) {
+    AppStorage.SetOrCreate(LANGUAGE_KEY, DEFAULT_LANGUAGE);
+  }
+  return DEFAULT_LANGUAGE;
+}
+const __LANG_INIT: string = __initLangStorage();
+
 @Entry
 @Component
 struct Onboarding {
+  @State private lang: string = 'en';
   @State private currentPage: number = 0;
   @State private isSubmitting: boolean = false;
 
-  private readonly features: Array<FeatureItem> = [
-    { icon: '📅', title: 'No account, open and use' },
-    { icon: '✅', title: 'Export your data anytime' },
-    { icon: '🔔', title: 'Quiet reminders' }
-  ];
+  private buildFeatures(copy: AppCopy): Array<FeatureItem> {
+    const result: Array<FeatureItem> = [];
+    for (let i = 0; i < copy.onboarding.features.length; i++) {
+      result.push({ icon: FEATURE_ICONS[i] ?? '•', title: copy.onboarding.features[i] });
+    }
+    return result;
+  }
 
-  private readonly trustItems: Array<TrustItem> = [
-    { icon: '🔒', label: 'End-to-end encrypted' },
-    { icon: '📱', label: 'Data stays on device' },
-    { icon: '🚫', label: 'Never sell user data' },
-    { icon: '🧹', label: 'Delete anytime' }
-  ];
+  private buildTrust(copy: AppCopy): Array<TrustItem> {
+    const result: Array<TrustItem> = [];
+    for (let i = 0; i < copy.onboarding.trust.length; i++) {
+      result.push({ icon: TRUST_ICONS[i] ?? '•', label: copy.onboarding.trust[i] });
+    }
+    return result;
+  }
 
   private onMainAction(): void {
     if (this.currentPage < 2) {
@@ -65,13 +80,13 @@ struct Onboarding {
       api.trackEvent('onboarding_complete').catch(() => undefined);
       router.replaceUrl({ url: 'pages/Index' });
     } catch (e) {
-      promptAction.showToast({ message: 'Initialization failed, try again later', duration: 2000 });
+      promptAction.showToast({ message: getCopy(this.lang).onboarding.initFailed, duration: 2000 });
     } finally {
       this.isSubmitting = false;
     }
   }
 
-  @Builder private HeroPage() {
+  @Builder private HeroPage(copy: AppCopy) {
     Column({ space: SPACING.lg }) {
       Stack() {
         Circle({ width: 220, height: 220 }).fill(COLORS.pinkMist).opacity(0.7)
@@ -85,15 +100,15 @@ struct Onboarding {
       .width(220).height(220)
 
       Column({ space: 6 }) {
-        Text('Your cycle data')
+        Text(copy.onboarding.heroA)
           .fontSize(FONT_SIZE.displaySmall).fontWeight(FONT_WEIGHT.bold)
           .fontColor(COLORS.ink).textAlign(TextAlign.Center)
-        Text('stays in your hands')
+        Text(copy.onboarding.heroB)
           .fontSize(FONT_SIZE.displaySmall).fontWeight(FONT_WEIGHT.bold)
           .fontColor(COLORS.accent).textAlign(TextAlign.Center)
       }
 
-      Text('Precise forecast · Smart reminders · No sign-up')
+      Text(copy.onboarding.heroSub)
         .fontSize(FONT_SIZE.body).fontWeight(FONT_WEIGHT.medium)
         .fontColor(COLORS.muted).textAlign(TextAlign.Center)
     }
@@ -102,14 +117,14 @@ struct Onboarding {
     .padding({ top: SPACING.xl })
   }
 
-  @Builder private FeaturePage() {
+  @Builder private FeaturePage(copy: AppCopy) {
     Column({ space: SPACING.lg }) {
-      Text('Core features')
+      Text(copy.onboarding.featureTitle)
         .fontSize(FONT_SIZE.displaySmall).fontWeight(FONT_WEIGHT.bold)
         .fontColor(COLORS.ink).textAlign(TextAlign.Center).width('100%')
 
       Column({ space: SPACING.sm }) {
-        ForEach(this.features, (item: FeatureItem) => {
+        ForEach(this.buildFeatures(copy), (item: FeatureItem) => {
           Row({ space: SPACING.md }) {
             Stack() {
               Circle({ width: 48, height: 48 }).fill(COLORS.pinkMist)
@@ -138,20 +153,20 @@ struct Onboarding {
     .padding({ top: SPACING.md })
   }
 
-  @Builder private TrustPage() {
+  @Builder private TrustPage(copy: AppCopy) {
     Column({ space: SPACING.lg }) {
-      Text('Privacy promise')
+      Text(copy.onboarding.trustTitle)
         .fontSize(FONT_SIZE.displaySmall).fontWeight(FONT_WEIGHT.bold)
         .fontColor(COLORS.ink).textAlign(TextAlign.Center).width('100%')
 
       Column({ space: SPACING.sm }) {
         Row() {
-          this.TrustItemView(this.trustItems[0])
-          this.TrustItemView(this.trustItems[1])
+          this.TrustItemView(this.buildTrust(copy)[0])
+          this.TrustItemView(this.buildTrust(copy)[1])
         }.width('100%')
         Row() {
-          this.TrustItemView(this.trustItems[2])
-          this.TrustItemView(this.trustItems[3])
+          this.TrustItemView(this.buildTrust(copy)[2])
+          this.TrustItemView(this.buildTrust(copy)[3])
         }.width('100%')
       }
       .width('100%')
@@ -200,15 +215,26 @@ struct Onboarding {
         }.width(36).height(36).justifyContent(FlexAlign.Center).alignItems(VerticalAlign.Center)
 
         Blank()
+
+        Text(getLanguageToggleLabel(this.lang))
+          .fontSize(FONT_SIZE.metaLabel)
+          .fontWeight(FONT_WEIGHT.semibold)
+          .fontColor(COLORS.accentDeep)
+          .textAlign(TextAlign.Center)
+          .width(44)
+          .height(32)
+          .borderRadius(16)
+          .backgroundColor(COLORS.pinkMist)
+          .onClick(() => { this.lang = getNextLanguage(this.lang) })
       }
       .width('100%')
       .padding({ left: SPACING.lg, right: SPACING.lg, top: SPACING.sm, bottom: SPACING.xs })
 
       Scroll() {
         Column() {
-          if (this.currentPage === 0) { this.HeroPage() }
-          if (this.currentPage === 1) { this.FeaturePage() }
-          if (this.currentPage === 2) { this.TrustPage() }
+          if (this.currentPage === 0) { this.HeroPage(getCopy(this.lang)) }
+          if (this.currentPage === 1) { this.FeaturePage(getCopy(this.lang)) }
+          if (this.currentPage === 2) { this.TrustPage(getCopy(this.lang)) }
         }
         .width('100%')
         .padding({ left: SPACING.lg, right: SPACING.lg })
@@ -217,7 +243,11 @@ struct Onboarding {
       .scrollBar(BarState.Off)
 
       Column({ space: SPACING.sm }) {
-        Button(this.currentPage === 0 ? 'Learn more' : this.currentPage === 1 ? 'Continue' : 'Start tracking')
+        Button(this.currentPage === 0
+          ? getCopy(this.lang).onboarding.btnLearn
+          : this.currentPage === 1
+            ? getCopy(this.lang).onboarding.btnContinue
+            : getCopy(this.lang).onboarding.btnStart)
           .width('100%')
           .height(52)
           .backgroundColor(COLORS.accent)
@@ -231,7 +261,7 @@ struct Onboarding {
 
         Row() {
           if (this.currentPage < 2) {
-            Text('Skip')
+            Text(getCopy(this.lang).onboarding.skip)
               .fontSize(FONT_SIZE.body).fontColor(COLORS.muted).fontWeight(FONT_WEIGHT.medium)
               .width(56)
               .onClick(() => { this.currentPage = 2 })
@@ -252,7 +282,7 @@ struct Onboarding {
         .width('100%')
 
         if (this.currentPage === 2) {
-          Text('No sign-up · Data stays local')
+          Text(getCopy(this.lang).onboarding.footerNote)
             .fontSize(FONT_SIZE.footnote).fontColor(COLORS.muted).textAlign(TextAlign.Center).width('100%')
         }
       }
