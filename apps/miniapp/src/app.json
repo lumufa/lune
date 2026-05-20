@@ -5,6 +5,7 @@
     "pages/calendar/index",
     "pages/settings/index",
     "pages/trends/index",
+    "pages/insights/index",
     "pages/record/index",
     "pages/reminders/index",
     "pages/privacy/index"

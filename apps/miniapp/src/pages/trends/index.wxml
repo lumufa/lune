@@ -15,6 +15,15 @@
     <text class="guidance-text">{{copy.guidanceText}}</text>
   </view>
 
+  <!-- AI insights entry -->
+  <view class="ai-entry-card" wx:if="{{hasSufficientData}}" bindtap="goToInsights">
+    <view class="ai-entry-text">
+      <text class="ai-entry-title">{{copy.aiEntryTitle}}</text>
+      <text class="ai-entry-sub">{{copy.aiEntrySubtitle}}</text>
+    </view>
+    <text class="ai-entry-arrow">›</text>
+  </view>
+
   <!-- Stats row (only when sufficient data) -->
   <view class="stats-row" wx:if="{{hasSufficientData}}">
     <view class="stat-card">

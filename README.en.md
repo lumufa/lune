@@ -41,7 +41,9 @@ Period-tracking apps are practically a smartphone staple by now, yet the market 
 |:---:|:---:|:---:|:---:|
 | ![Calendar](docs/images/calendar.jpg) | ![Trends](docs/images/trends.jpg) | ![Log](docs/images/record.jpg) | ![Reminders](docs/images/reminders.jpg) |
 
-<!-- AI monthly interpretation v1 is only wired up in the WeChat Mini Program client (highlight 2 details the full prompt and degradation flow); screenshot to follow. -->
+**AI monthly interpretation** v1 is only wired up in the WeChat Mini Program client (highlight 2 details the full prompt and 4-layer degradation flow):
+
+![AI monthly interpretation — pattern summary + 5 highlights + disclaimer](docs/images/ai-interpretation.png)
 
 ---
 

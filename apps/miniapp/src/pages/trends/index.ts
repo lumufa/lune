@@ -25,6 +25,8 @@ interface TrendsCopy {
   viewAllSuffix: string;
   networkError: string;
   loadFailed: string;
+  aiEntryTitle: string;
+  aiEntrySubtitle: string;
 }
 
 function buildCopy(language: DisplayLanguage, remaining?: number): TrendsCopy {
@@ -53,7 +55,12 @@ function buildCopy(language: DisplayLanguage, remaining?: number): TrendsCopy {
     viewAllPrefix: language === "en" ? "View all " : "查看全部 ",
     viewAllSuffix: language === "en" ? " records" : " 条记录",
     networkError: language === "en" ? "API offline" : "接口未连接",
-    loadFailed: language === "en" ? "Load failed" : "加载失败"
+    loadFailed: language === "en" ? "Load failed" : "加载失败",
+    aiEntryTitle: language === "en" ? "AI monthly interpretation" : "AI 月度解读",
+    aiEntrySubtitle:
+      language === "en"
+        ? "Generate a pattern summary from this month's records"
+        : "基于本月记录生成模式解读"
   };
 }
 
@@ -175,5 +182,9 @@ Page({
       expanded: true,
       showViewAll: false
     });
+  },
+
+  goToInsights() {
+    wx.navigateTo({ url: "/pages/insights/index" });
   }
 });

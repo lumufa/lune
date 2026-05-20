@@ -41,7 +41,9 @@
 |:---:|:---:|:---:|:---:|
 | ![日历](docs/images/calendar.jpg) | ![趋势](docs/images/trends.jpg) | ![记录](docs/images/record.jpg) | ![提醒](docs/images/reminders.jpg) |
 
-<!-- AI 月度解读 v1 仅微信小程序端有 UI 入口（亮点 2 详述完整 prompt 与降级流程），截图后续补。 -->
+**AI 月度解读** v1 仅微信小程序端有 UI 入口（亮点 2 详述完整 prompt 与 4 层错误降级流程）：
+
+![AI 本月解读 — 周期模式总结 + 5 条 highlights + 免责声明](docs/images/ai-interpretation.png)
 
 ---
 
