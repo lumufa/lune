@@ -6,7 +6,9 @@
 
 ![platform-miniapp](https://img.shields.io/badge/微信小程序-Taro-1AAD19) ![platform-android](https://img.shields.io/badge/Android-Expo%20RN-3DDC84) ![platform-ios](https://img.shields.io/badge/iOS-Expo%20RN-000000) ![platform-harmony](https://img.shields.io/badge/HarmonyOS-ArkTS-000000) ![api](https://img.shields.io/badge/Server-NestJS-EA2845) ![monorepo](https://img.shields.io/badge/Monorepo-Yarn%20Workspaces-2C8EBB)
 
-![Lune 首页 — 周期第 11 天 · 距下次 19 天 · 自适应预测窗口](docs/images/hero.jpg)
+<p align="center">
+  <img src="docs/images/hero.jpg" width="260" alt="Lune 首页 — 周期第 11 天 · 距下次 19 天 · 自适应预测窗口" />
+</p>
 
 > 截图取自 Android 端；微信小程序 / iOS / 鸿蒙端 UI 各自原生迭代，截图后续补。
 
@@ -57,11 +59,13 @@
 
 | 日历 · 经期标记 + 今日定位 | 趋势 · 流量分布 + 最近 5 次记录 | 记录 · 血量/疼痛/症状/心情 | 提醒 · 免打扰 + 三类提醒 |
 |:---:|:---:|:---:|:---:|
-| ![日历](docs/images/calendar.jpg) | ![趋势](docs/images/trends.jpg) | ![记录](docs/images/record.jpg) | ![提醒](docs/images/reminders.jpg) |
+| <img src="docs/images/calendar.jpg" width="170" alt="日历" /> | <img src="docs/images/trends.jpg" width="170" alt="趋势" /> | <img src="docs/images/record.jpg" width="170" alt="记录" /> | <img src="docs/images/reminders.jpg" width="170" alt="提醒" /> |
 
 **AI 月度解读** v1 仅微信小程序端有 UI 入口（亮点 2 详述完整 prompt 与 4 层错误降级流程）：
 
-![AI 本月解读 — 周期模式总结 + 5 条 highlights + 免责声明](docs/images/ai-interpretation.png)
+<p align="center">
+  <img src="docs/images/ai-interpretation.png" width="260" alt="AI 本月解读 — 周期模式总结 + 5 条 highlights + 免责声明" />
+</p>
 
 ---
 
@@ -309,7 +313,9 @@ const confidence =
 - `deleteAccount` 不是软删除：[`privacy.service.ts:36-45`](./apps/api/src/modules/privacy/privacy.service.ts) 直接调 `this.store.deleteUser(userId)` 清除所有 Map。
 - **设计哲学**：导出/删除如果做得越好，用户**越可能选择留下**——因为他知道随时可以走。把退出门做大，是为了让留下的人是自愿的。
 
-![设置页 — 导出数据 + 删除账号是第一层入口](docs/images/settings.jpg)
+<p align="center">
+  <img src="docs/images/settings.jpg" width="260" alt="设置页 — 导出数据 + 删除账号是第一层入口" />
+</p>
 
 ---
 

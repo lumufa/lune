@@ -6,7 +6,9 @@
 
 ![platform-miniapp](https://img.shields.io/badge/WeChat%20Mini%20Program-Taro-1AAD19) ![platform-android](https://img.shields.io/badge/Android-Expo%20RN-3DDC84) ![platform-ios](https://img.shields.io/badge/iOS-Expo%20RN-000000) ![platform-harmony](https://img.shields.io/badge/HarmonyOS-ArkTS-000000) ![api](https://img.shields.io/badge/Server-NestJS-EA2845) ![monorepo](https://img.shields.io/badge/Monorepo-Yarn%20Workspaces-2C8EBB)
 
-![Lune home — cycle day 11 · 19 days until next · adaptive prediction window](docs/images/hero.jpg)
+<p align="center">
+  <img src="docs/images/hero.jpg" width="260" alt="Lune home — cycle day 11 · 19 days until next · adaptive prediction window" />
+</p>
 
 > Screenshots taken from the Android client; WeChat Mini Program / iOS / HarmonyOS clients each iterate natively — screenshots to follow.
 
@@ -39,11 +41,13 @@ Period-tracking apps are practically a smartphone staple by now, yet the market 
 
 | Calendar — period marks + today indicator | Trends — flow distribution + last 5 cycles | Log — flow / pain / symptoms / mood | Reminders — quiet hours + three reminder types |
 |:---:|:---:|:---:|:---:|
-| ![Calendar](docs/images/calendar.jpg) | ![Trends](docs/images/trends.jpg) | ![Log](docs/images/record.jpg) | ![Reminders](docs/images/reminders.jpg) |
+| <img src="docs/images/calendar.jpg" width="170" alt="Calendar" /> | <img src="docs/images/trends.jpg" width="170" alt="Trends" /> | <img src="docs/images/record.jpg" width="170" alt="Log" /> | <img src="docs/images/reminders.jpg" width="170" alt="Reminders" /> |
 
 **AI monthly interpretation** v1 is only wired up in the WeChat Mini Program client (highlight 2 details the full prompt and 4-layer degradation flow):
 
-![AI monthly interpretation — pattern summary + 5 highlights + disclaimer](docs/images/ai-interpretation.png)
+<p align="center">
+  <img src="docs/images/ai-interpretation.png" width="260" alt="AI monthly interpretation — pattern summary + 5 highlights + disclaimer" />
+</p>
 
 ---
 
@@ -276,7 +280,9 @@ The "window automatically widens when variability is high" design is the most-ov
 - `deleteAccount` is not a soft delete: [`privacy.service.ts:36-45`](./apps/api/src/modules/privacy/privacy.service.ts) calls `this.store.deleteUser(userId)` directly and clears every Map.
 - **Design philosophy**: the better export and delete are, the **more likely users are to choose to stay** — because they know they can leave at any time. Making the exit door big is how you ensure the people who stay are doing so by choice.
 
-![Settings screen — Export data and Delete account are first-class entry points](docs/images/settings.jpg)
+<p align="center">
+  <img src="docs/images/settings.jpg" width="260" alt="Settings screen — Export data and Delete account are first-class entry points" />
+</p>
 
 ---
 
