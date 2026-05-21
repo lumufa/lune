@@ -14,6 +14,24 @@
 
 ---
 
+## Table of Contents
+
+- [The Problem It Solves](#the-problem-it-solves)
+- [Core Features](#core-features)
+- [Try It Now](#try-it-now)
+- [Technical Architecture](#technical-architecture)
+- [Technical Highlights](#technical-highlights)
+  - [Highlight 1: Cross-Platform Monorepo with Yarn Workspaces](#highlight-1-cross-platform-monorepo-with-yarn-workspaces)
+  - [Highlight 2: A Four-Tier LLM Error Degradation Pipeline](#highlight-2-a-four-tier-llm-error-degradation-pipeline)
+  - [Highlight 3: Cycle Prediction with Adaptive Confidence](#highlight-3-cycle-prediction-with-adaptive-confidence)
+  - [Highlight 4: Treating Privacy as an Architectural Decision](#highlight-4-treating-privacy-as-an-architectural-decision)
+- [Project Structure](#project-structure)
+- [Local Development](#local-development)
+- [Contributing](#contributing)
+- [Known Issues](#known-issues)
+
+---
+
 ## The Problem It Solves
 
 Period-tracking apps are practically a smartphone staple by now, yet the market has long ignored two real problems:
@@ -48,6 +66,21 @@ Period-tracking apps are practically a smartphone staple by now, yet the market 
 <p align="center">
   <img src="docs/images/ai-interpretation.png" width="260" alt="AI monthly interpretation — pattern summary + 5 highlights + disclaimer" />
 </p>
+
+---
+
+## Try It Now
+
+> For per-platform version numbers and release progress, see [Known Issues](#known-issues).
+
+| Platform | How to try it today | Notes |
+|---|---|---|
+| **WeChat Mini Program** | Import `apps/miniapp` into WeChat DevTools locally | Not yet listed on the WeChat platform; preview-build QR code TBD |
+| **Android / iOS (Expo Go)** | [Expo project page](https://expo.dev/accounts/lumufa/projects/banxia-cycle-mobile) | Install Expo Go, then open the project page and scan to connect directly to the latest `eas update` dev/preview branch |
+| **HarmonyOS** | Open `apps/harmony` in DevEco Studio and build the HAP yourself | Not yet on the Huawei AppGallery; pre-built HAP release will be uploaded to GitHub Releases later |
+| **API backend** | `npm run dev:api` (see [Local Development](#local-development)) | NestJS service, default `http://localhost:3000`; production is deployed to Tencent Cloud Hosting |
+
+> AI monthly interpretation requires the backend to have `LLM_ENDPOINT` and `LLM_API_KEY` set, otherwise the client surfaces Layer 2 "AI service not configured in this environment" — designed behavior, not a bug.
 
 ---
 
@@ -343,3 +376,28 @@ npm run test:prediction
 ```
 
 To get AI interpretation running, set `LLM_ENDPOINT` and `LLM_API_KEY` in the `apps/api` environment (any OpenAI-compatible endpoint works, e.g. DeepSeek or Doubao). When unset, `/cycles/ai-interpretation` deliberately returns **503** and the client degrades to Layer 2 copy — this is designed behavior, not a bug.
+
+---
+
+## Contributing
+
+Issues and PRs welcome. A few things before you start:
+
+- **Open an issue first for large changes**: any PR touching cross-platform contracts (`packages/shared` type changes), AI prompt / privacy allow-list adjustments, or `PrivacyActionType` enum extensions should be discussed in an issue first — avoid finishing the work only to discover it breaks cross-platform consistency.
+- **Branch naming**: `feat-<scope>` / `fix-<scope>` / `docs-<scope>` / `refactor-<scope>`, e.g. `feat-ai-interpretation-streaming`, `fix-harmony-onboarding-flicker`.
+- **Commit conventions**: follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) (`feat:` / `fix:` / `docs:` / `chore:` / `refactor:` prefixes); use scopes for sub-projects: `feat(miniapp): ...`, `fix(api): ...`.
+- **Merge style**: all PRs use **Squash merge** to keep `main` linear; the squash title reuses the PR title, body preserves the PR description.
+- **Tests**: any change to pure functions in `packages/prediction/` must update `index.spec.ts` in the same PR; run `npm run test:prediction` locally before opening the PR.
+- **Privacy allow-list changes**: if you add a field to `buildSanitizedPayload`, the PR description must justify why that field needs to leave the process and whether it is de-identifiable. This is a high-bar review — expect discussion time.
+
+---
+
+## Known Issues
+
+- [ ] **WeChat Mini Program not published**: not yet submitted for WeChat platform review; no preview-build QR code; only local WeChat DevTools import is supported.
+- [ ] **HarmonyOS HAP not listed**: not yet submitted to the Huawei AppGallery, and no pre-built HAP on GitHub Releases yet — users must build it themselves.
+- [ ] **AI monthly interpretation UI only on WeChat Mini Program**: mobile (Expo) and HarmonyOS clients don't expose an entry point yet. The backend `/cycles/ai-interpretation` is general-purpose and all four platforms share the same contract — porting is mostly UI work.
+- [ ] **HarmonyOS prediction is server-side**: ArkTS cannot consume npm packages directly, so the HarmonyOS client currently depends on the server-returned `PredictionSnapshot` rather than computing locally (see the `Types.ets` note in [Highlight 1](#highlight-1-cross-platform-monorepo-with-yarn-workspaces)).
+- [ ] **Backend uses an in-memory store**: `apps/api` currently persists state via in-memory Maps; restarting the process loses data. Persistence layer (Postgres / SQLite) is on the to-do list. The production Cloud Hosting deployment uses the same store — demo-only.
+- [ ] **AI 484ms average latency pending verification**: the DeepSeek mean response latency cited in [Highlight 2](#highlight-2-a-four-tier-llm-error-degradation-pipeline) is author-quoted and has not been formally benchmarked.
+- [ ] **Design tokens don't cover dynamic themes**: `@women-period/design-tokens` currently emits a single light-theme set; dark mode / high-contrast variants are not planned yet.
