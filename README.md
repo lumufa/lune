@@ -12,6 +12,24 @@
 
 ---
 
+## 目录
+
+- [它解决什么问题](#它解决什么问题)
+- [核心特性](#核心特性)
+- [立即体验](#立即体验)
+- [技术架构](#技术架构)
+- [技术亮点](#技术亮点)
+  - [亮点 1：Yarn Workspaces 跨端 Monorepo 架构](#亮点-1yarn-workspaces-跨端-monorepo-架构)
+  - [亮点 2：LLM 错误四级分层降级机制](#亮点-2llm-错误四级分层降级机制)
+  - [亮点 3：自适应置信度的周期预测算法](#亮点-3自适应置信度的周期预测算法)
+  - [亮点 4：把隐私当架构决策的设计](#亮点-4把隐私当架构决策的设计)
+- [项目结构](#项目结构)
+- [本地开发](#本地开发)
+- [参与贡献](#参与贡献)
+- [已知问题](#已知问题)
+
+---
+
 ## 它解决什么问题
 
 经期跟踪类 App 几乎已经是手机标配，但它存在两个被市场长期忽略的问题：
@@ -44,6 +62,21 @@
 **AI 月度解读** v1 仅微信小程序端有 UI 入口（亮点 2 详述完整 prompt 与 4 层错误降级流程）：
 
 ![AI 本月解读 — 周期模式总结 + 5 条 highlights + 免责声明](docs/images/ai-interpretation.png)
+
+---
+
+## 立即体验
+
+> 各端版本号、上架进度参见 [已知问题](#已知问题)。
+
+| 端 | 当前可用方式 | 说明 |
+|---|---|---|
+| **微信小程序** | 本地用 WeChat DevTool 导入 `apps/miniapp` | 暂未发布到微信平台搜索目录，体验版二维码 TBD |
+| **Android / iOS（Expo Go）** | [Expo 项目页](https://expo.dev/accounts/lumufa/projects/banxia-cycle-mobile) | 装好 Expo Go 后打开该项目页扫码可直连最近一次 `eas update` 推送的 dev/preview 分支 |
+| **HarmonyOS** | 用 DevEco Studio 打开 `apps/harmony` 自构建 HAP | 暂未上架华为应用市场，HAP release 包后续上传至 GitHub Releases |
+| **API 后端** | `npm run dev:api`（详见 [本地开发](#本地开发)） | NestJS 服务，默认 `http://localhost:3000`；生产已部署至 Cloud Hosting |
+
+> AI 月度解读功能需后端正确配置 `LLM_ENDPOINT` 与 `LLM_API_KEY`，否则前端会显示 Layer 2「该环境未配置 AI 服务」——这是设计行为。
 
 ---
 
@@ -337,3 +370,28 @@ npm run test:prediction
 ```
 
 要让 AI 解读跑起来，需在 `apps/api` 环境变量里配 `LLM_ENDPOINT` 与 `LLM_API_KEY`（OpenAI 兼容端点即可，例如 DeepSeek / Doubao）。未配置时 `/cycles/ai-interpretation` 会显式返回 **503**，客户端按 Layer 2 文案降级——这是设计行为，不是 bug。
+
+---
+
+## 参与贡献
+
+欢迎 issue 与 PR。在动手前请注意：
+
+- **大改动先开 issue 对齐**：涉及跨端契约（`packages/shared` 类型变更）、AI Prompt / 隐私白名单调整、`PrivacyActionType` 枚举扩展的 PR 必须先在 issue 中讨论，避免做完了才发现破坏端间一致性。
+- **分支命名**：`feat-<scope>` / `fix-<scope>` / `docs-<scope>` / `refactor-<scope>`，例如 `feat-ai-interpretation-streaming`、`fix-harmony-onboarding-flicker`。
+- **Commit 规范**：遵循 [Conventional Commits](https://www.conventionalcommits.org/zh-hans/v1.0.0/)（`feat:` / `fix:` / `docs:` / `chore:` / `refactor:` 等前缀），子项目用 scope 标注：`feat(miniapp): ...`、`fix(api): ...`。
+- **合并方式**：所有 PR 均走 **Squash merge**，保持主分支线性；squash 标题沿用 PR 标题，正文保留 PR 描述。
+- **测试要求**：动到 `packages/prediction/` 的纯函数必须同步更新 `index.spec.ts`，本地 `npm run test:prediction` 通过后再发 PR。
+- **隐私白名单变更**：若新增 `buildSanitizedPayload` 的字段，需在 PR 描述中明确该字段为什么必须出端 + 是否构成可去标识 / 不可去标识。这是个 high-bar review，请预留沟通时间。
+
+---
+
+## 已知问题
+
+- [ ] **微信小程序未发布**：尚未提交微信平台审核，体验版二维码暂缺；目前仅支持本地 WeChat DevTool 导入。
+- [ ] **HarmonyOS HAP 未上架**：尚未提交华为应用市场，也未在 GitHub Releases 发布预构建 HAP，需用户自构建。
+- [ ] **AI 月度解读 UI 仅在微信小程序端**：移动端 (Expo) 与鸿蒙端尚无 UI 入口。后端 `/cycles/ai-interpretation` 已通用，4 端共用同一份契约，移植主要是 UI 工作。
+- [ ] **鸿蒙端预测算法走服务端**：因 ArkTS 不能直接消费 npm package，鸿蒙端目前依赖服务端返回 `PredictionSnapshot`，未在端上独立计算（[亮点 1 中关于 `Types.ets` 的说明](#亮点-1yarn-workspaces-跨端-monorepo-架构)）。
+- [ ] **后端 in-memory store**：`apps/api` 目前用内存 Map 持久化，进程重启数据丢失；待替换为持久层（Postgres / SQLite）。生产 Cloud Hosting 已部署但同样使用内存存储，仅适合 demo。
+- [ ] **AI 平均时延 484ms 数据待复核**：[亮点 2](#亮点-2llm-错误四级分层降级机制) 中的 DeepSeek 平均响应时延为作者口述，未经标准压测验证。
+- [ ] **设计 token 未覆盖动态主题**：当前 `@women-period/design-tokens` 仅出一套浅色 token，深色 / 高对比度模式尚未规划。
