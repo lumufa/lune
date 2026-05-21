@@ -2,7 +2,7 @@
 
 > English | [简体中文](./README.md)
 
-> A 20-year-old solo student developer shipped one AI health product to **4 platforms** (WeChat Mini Program / Android / iOS / HarmonyOS) — architecture, cross-platform core algorithms, LLM integration, and production deployment all done single-handedly.
+> One AI health product, shipped to **4 platforms** (WeChat Mini Program / Android / iOS / HarmonyOS) — architecture, cross-platform core algorithms, LLM integration, and production deployment all delivered single-handedly by an independent developer.
 
 ![platform-miniapp](https://img.shields.io/badge/WeChat%20Mini%20Program-Taro-1AAD19) ![platform-android](https://img.shields.io/badge/Android-Expo%20RN-3DDC84) ![platform-ios](https://img.shields.io/badge/iOS-Expo%20RN-000000) ![platform-harmony](https://img.shields.io/badge/HarmonyOS-ArkTS-000000) ![api](https://img.shields.io/badge/Server-NestJS-EA2845) ![monorepo](https://img.shields.io/badge/Monorepo-Yarn%20Workspaces-2C8EBB)
 

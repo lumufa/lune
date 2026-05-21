@@ -2,7 +2,7 @@
 
 > [English](./README.en.md) | 简体中文
 
-> 一位 20 岁在校独立开发者，把一个 AI 健康产品做到了 **4 个平台**（微信小程序 / Android / iOS / 鸿蒙），从架构、跨端核心算法、LLM 集成到部署上线一人完成。
+> 一个 AI 健康产品做到了 **4 个平台**（微信小程序 / Android / iOS / 鸿蒙）——从架构、跨端核心算法、LLM 集成到部署上线，由独立开发者一人完成。
 
 ![platform-miniapp](https://img.shields.io/badge/微信小程序-Taro-1AAD19) ![platform-android](https://img.shields.io/badge/Android-Expo%20RN-3DDC84) ![platform-ios](https://img.shields.io/badge/iOS-Expo%20RN-000000) ![platform-harmony](https://img.shields.io/badge/HarmonyOS-ArkTS-000000) ![api](https://img.shields.io/badge/Server-NestJS-EA2845) ![monorepo](https://img.shields.io/badge/Monorepo-Yarn%20Workspaces-2C8EBB)
 
